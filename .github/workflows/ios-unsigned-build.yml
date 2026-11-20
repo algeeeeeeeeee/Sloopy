@@ -1,0 +1,93 @@
+name: Sloopy iOS Unsigned Build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - 'www/**'
+      - 'scripts/**'
+      - '.github/workflows/ios-unsigned-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build unsigned iOS IPA
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select Xcode 26
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_APP="/Applications/Xcode.app"
+          if [ ! -d "$XCODE_APP/Contents/Developer" ]; then
+            echo "Xcode 26 was not found."
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
+          "$XCODE_APP/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Add iOS platform
+        run: npx cap add ios --packagemanager SPM
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: List Xcode project
+        run: xcodebuild -list -project ios/App/App.xcodeproj
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -target App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/SloopyDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/SloopyDerivedData/Build/Products/Release-iphoneos/App.app"
+          test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/App.app"
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/Sloopy-unsigned.ipa" Payload
+          test -s "$GITHUB_WORKSPACE/Sloopy-unsigned.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: Sloopy-unsigned-IPA
+          path: Sloopy-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
