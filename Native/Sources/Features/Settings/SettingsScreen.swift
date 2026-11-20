@@ -12,6 +12,10 @@ struct SloopyQuickApp: Identifiable {
 
     static let all: [SloopyQuickApp] = [
         .init(id: "whatsapp", name: "WhatsApp", symbol: "message.fill", deepLink: "whatsapp://", fallbackURL: "https://www.whatsapp.com/"),
+        .init(id: "line", name: "LINE", symbol: "message.circle.fill", deepLink: "line://", fallbackURL: "https://line.me/"),
+        .init(id: "x", name: "X", symbol: "at", deepLink: "twitter://", fallbackURL: "https://x.com/"),
+        .init(id: "facebook", name: "Facebook", symbol: "person.2.fill", deepLink: "fb://", fallbackURL: "https://www.facebook.com/"),
+        .init(id: "tiktok", name: "TikTok", symbol: "music.note", deepLink: "snssdk1233://", fallbackURL: "https://www.tiktok.com/"),
         .init(id: "instagram", name: "Instagram", symbol: "camera.fill", deepLink: "instagram://app", fallbackURL: "https://www.instagram.com/"),
         .init(id: "youtube", name: "YouTube", symbol: "play.rectangle.fill", deepLink: "youtube://", fallbackURL: "https://www.youtube.com/"),
         .init(id: "spotify", name: "Spotify", symbol: "waveform", deepLink: "spotify://", fallbackURL: "https://open.spotify.com/")
@@ -416,7 +420,7 @@ struct SettingsScreen: View {
 
     private var quickLaunchSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeading("Quick Launch", subtitle: "Choose built-in apps or add your own shortcuts.")
+            sectionHeading("Quick Launch", subtitle: "Select supported apps or add a custom shortcut.")
 
             ForEach(SloopyQuickApp.all) { app in
                 Toggle(isOn: Binding(
@@ -477,7 +481,7 @@ struct SettingsScreen: View {
             }
             .buttonStyle(.plain)
 
-            Text("You can add an app using its URL scheme, or add a website with an https:// address. iOS does not let apps list every installed app automatically.")
+            Text("Choose an app here to add it to your Home menu. iOS does not allow Sloopy to scan every installed app; if an app is unavailable, its website will open instead.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
