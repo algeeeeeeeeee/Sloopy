@@ -30,6 +30,10 @@ enum SloopyFocusMode: String, Identifiable {
 }
 
 struct FocusModeSheet: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @Environment(\.dismiss) private var dismiss
 
     let mode: SloopyFocusMode
@@ -150,9 +154,9 @@ struct FocusModeSheet: View {
         HStack(spacing: 13) {
             Image(systemName: mode.symbol)
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
                 .frame(width: 48, height: 48)
-                .background(Color.accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 15))
+                .background(accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 15))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(mode.title)
@@ -190,7 +194,7 @@ struct FocusModeSheet: View {
             if isModeActive {
                 Toggle("I have completed this task", isOn: $workGoalComplete)
                     .font(.subheadline.weight(.medium))
-                    .tint(.accentColor)
+                    .tint(accentColor)
             } else {
                 Text("You’ll mark this task complete before ending Work Mode.")
                     .font(.caption)
@@ -219,7 +223,7 @@ struct FocusModeSheet: View {
 
                 Image(systemName: "hand.raised.slash.fill")
                     .font(.title3)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
             }
 
             Button {
@@ -229,7 +233,7 @@ struct FocusModeSheet: View {
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(12)
-                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                    .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
             .disabled(isWorking)
@@ -258,7 +262,7 @@ struct FocusModeSheet: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(14)
-            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+            .background(accentColor, in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
         .disabled(
@@ -288,7 +292,7 @@ struct FocusModeSheet: View {
                         .font(.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(13)
-                        .background(Color.accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 13))
+                        .background(accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 13))
                 }
                 .buttonStyle(.plain)
                 .disabled(!workGoalComplete)
@@ -322,7 +326,7 @@ struct FocusModeSheet: View {
                         .font(.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(13)
-                        .background(Color.accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 13))
+                        .background(accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 13))
                 }
                 .buttonStyle(.plain)
             }
