@@ -15,6 +15,9 @@ struct SloopyHomeScreen: View {
     @AppStorage("sloopy-native-favorites")
     private var favoritesRaw = "whatsapp,instagram,youtube,spotify"
 
+    @AppStorage("sloopy-native-custom-quick-apps")
+    private var customQuickAppsRaw = "[]"
+
     @AppStorage("sloopy-native-custom-shortcut-name")
     private var customShortcutName = "MWLT"
 
@@ -48,6 +51,14 @@ struct SloopyHomeScreen: View {
     private var favoriteApps: [SloopyQuickApp] {
         let ids = Set(favoritesRaw.split(separator: ",").map(String.init))
         return SloopyQuickApp.all.filter { ids.contains($0.id) }
+    }
+
+    private var customQuickApps: [SloopyCustomQuickApp] {
+        guard let data = customQuickAppsRaw.data(using: .utf8),
+              let apps = try? JSONDecoder().decode([SloopyCustomQuickApp].self, from: data) else {
+            return []
+        }
+        return apps
     }
 
     var body: some View {
@@ -121,6 +132,16 @@ struct SloopyHomeScreen: View {
                         QuickLaunchService.open(app)
                     } label: {
                         Label(app.name, systemImage: app.symbol)
+                    }
+                }
+                if !customQuickApps.isEmpty {
+                    Divider()
+                    ForEach(customQuickApps) { app in
+                        Button {
+                            QuickLaunchService.open(app)
+                        } label: {
+                            Label(app.name, systemImage: app.symbol)
+                        }
                     }
                 }
                 if !customShortcutURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
