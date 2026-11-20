@@ -104,6 +104,10 @@ private struct DiscoveryFact: Identifiable {
 }
 
 struct DiscoverScreen: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @AppStorage("sloopy-native-discovery-date")
     private var savedDate = ""
 
@@ -198,13 +202,13 @@ struct DiscoverScreen: View {
                 .tracking(1.5)
                 .opacity(0.65)
         }
-        .foregroundStyle(Color.accentColor)
+        .foregroundStyle(accentColor)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 25)
         .background(
             LinearGradient(
                 colors: [
-                    Color.accentColor.opacity(0.17),
+                    accentColor.opacity(0.17),
                     Color(uiColor: .secondarySystemGroupedBackground)
                 ],
                 startPoint: .topLeading,
@@ -219,7 +223,7 @@ struct DiscoverScreen: View {
             Text(fact.category)
                 .font(.system(size: 9, weight: .bold))
                 .tracking(1)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
 
             Text(fact.title)
                 .font(.title3.bold())
@@ -234,7 +238,7 @@ struct DiscoverScreen: View {
                         .font(.subheadline.bold())
                         .frame(maxWidth: .infinity)
                         .padding(13)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                        .background(accentColor, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
@@ -250,7 +254,7 @@ struct DiscoverScreen: View {
             Label("DISCOVERY UNLOCKED", systemImage: "lock.open.fill")
                 .font(.system(size: 9, weight: .bold))
                 .tracking(1)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
 
             Text(fact.unlocked)
                 .font(.headline)
@@ -276,7 +280,7 @@ struct DiscoverScreen: View {
             Label("QUICK QUIZ", systemImage: "questionmark.circle.fill")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
 
             Text(fact.question)
                 .font(.headline)
@@ -294,11 +298,11 @@ struct DiscoverScreen: View {
                             Image(systemName: "checkmark.circle.fill")
                         }
                     }
-                    .foregroundStyle(selectedAnswer == option ? Color.accentColor : Color.primary)
+                    .foregroundStyle(selectedAnswer == option ? accentColor : Color.primary)
                     .padding(13)
                     .background(
                         selectedAnswer == option
-                            ? Color.accentColor.opacity(0.12)
+                            ? accentColor.opacity(0.12)
                             : Color(uiColor: .secondarySystemGroupedBackground),
                         in: RoundedRectangle(cornerRadius: 13)
                     )
@@ -321,7 +325,7 @@ struct DiscoverScreen: View {
                         .font(.subheadline.bold())
                         .frame(maxWidth: .infinity)
                         .padding(13)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                        .background(accentColor, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
@@ -344,7 +348,7 @@ struct DiscoverScreen: View {
 
                 Text("\(stamps) stamps")
                     .font(.caption.bold())
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
             }
 
             HStack(spacing: 8) {
@@ -352,12 +356,12 @@ struct DiscoverScreen: View {
                     Image(systemName: index < stamps ? "sparkle" : "circle")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(
-                            index < stamps ? Color.accentColor : Color.secondary.opacity(0.3)
+                            index < stamps ? accentColor : Color.secondary.opacity(0.3)
                         )
                         .frame(maxWidth: .infinity)
                         .frame(height: 38)
                         .background(
-                            Color.accentColor.opacity(index < stamps ? 0.12 : 0.04),
+                            accentColor.opacity(index < stamps ? 0.12 : 0.04),
                             in: RoundedRectangle(cornerRadius: 10)
                         )
                 }
