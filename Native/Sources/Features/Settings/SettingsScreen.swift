@@ -31,6 +31,17 @@ struct SloopyAccentOption: Identifiable {
     ]
 }
 
+private struct SloopyAccentColorEnvironmentKey: EnvironmentKey {
+    static let defaultValue = Color(hex: "#7898AA")
+}
+
+extension EnvironmentValues {
+    var sloopyAccentColor: Color {
+        get { self[SloopyAccentColorEnvironmentKey.self] }
+        set { self[SloopyAccentColorEnvironmentKey.self] = newValue }
+    }
+}
+
 enum SloopyPalette {
     static func color(for name: String, customHex: String = "#7898AA") -> Color {
         if name == "custom" {
@@ -384,9 +395,20 @@ struct SettingsScreen: View {
             DispatchQueue.main.async {
                 isChangingAppIcon = false
                 if let error {
-                    appIconError = error.localizedDescription
+                    let nsError = error as NSError
+                    let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError
+                    var details = [
+                        error.localizedDescription,
+                        "\(nsError.domain) (code \(nsError.code))"
+                    ]
+                    if let underlyingError {
+                        details.append(
+                            "Underlying: \(underlyingError.domain) (code \(underlyingError.code))"
+                        )
+                    }
+                    appIconError = details.joined(separator: "\\n")
                 } else {
-                    selectedAppIconName = targetName
+                    selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
                 }
             }
         }
