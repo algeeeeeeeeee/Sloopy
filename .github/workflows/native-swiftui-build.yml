@@ -65,13 +65,24 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Package device build artifact
+      - name: Package unsigned IPA
         run: |
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          ditto "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/Sloopy.app"
           ditto -c -k --sequesterRsrc --keepParent \
-            "$APP_PATH" \
-            "$RUNNER_TEMP/Sloopy-iOS-device-build-unsigned.zip"
+            "$RUNNER_TEMP/ipa/Payload" \
+            "$RUNNER_TEMP/Sloopy-unsigned.ipa"
+          unzip -l "$RUNNER_TEMP/Sloopy-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
+
+      - name: Upload iPhone build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sloopy-unsigned-IPA
+          path: ${{ runner.temp }}/Sloopy-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload iPhone build
         uses: actions/upload-artifact@v4
