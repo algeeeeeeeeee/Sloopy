@@ -12,6 +12,8 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+    resources:
+      - path: Resources/Assets.xcassets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sloopy.daily
@@ -25,3 +27,5 @@ targets:
         INFOPLIST_KEY_CFBundleShortVersionString: "1.0.0"
         INFOPLIST_KEY_CFBundleVersion: "1"
         CODE_SIGN_ENTITLEMENTS: Sloopy.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Ocean AppIcon-Sage AppIcon-Lavender AppIcon-Peach"
