@@ -90,12 +90,6 @@ struct SloopyHomeScreen: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        .task {
-            guard !activeFocusMode.isEmpty else { return }
-            try? SloopyFocusService.shared.applySelection(
-                SloopyFocusService.shared.loadSelection()
-            )
-        }
     }
 
     private var header: some View {
@@ -261,8 +255,8 @@ struct SloopyHomeScreen: View {
                     Text("Get Ready")
                         .font(.headline)
                     Text(activeFocusMode == SloopyFocusMode.getReady.rawValue
-                         ? "Your selected distractions are paused."
-                         : "A calmer start, without the scroll.")
+                         ? "Your focus session is in progress."
+                         : "A calmer start, with time set aside for yourself.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -332,7 +326,7 @@ struct SloopyHomeScreen: View {
 
                     Text(activeFocusMode == SloopyFocusMode.work.rawValue
                          ? "Focus is on · open to manage your task"
-                         : "Keep selected distractions out of the way.")
+                         : "Keep one important task in focus.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
