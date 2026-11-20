@@ -3,7 +3,7 @@ import PhotosUI
 import UIKit
 
 struct ProfileEditorSheet: View {
-    private var accentColor: Color { Color.accentColor }
+    @Environment(\.sloopyAccentColor) private var accentColor
 
     @Environment(\.dismiss) private var dismiss
 
