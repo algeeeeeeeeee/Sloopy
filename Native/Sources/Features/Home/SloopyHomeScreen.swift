@@ -1,5 +1,6 @@
-
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct SloopyHomeScreen: View {
     @AppStorage("sloopy-profile-name")
@@ -7,6 +8,9 @@ struct SloopyHomeScreen: View {
 
     @AppStorage("sloopy-avatar")
     private var avatar = "🌿"
+
+    @AppStorage("sloopy-native-avatar-image")
+    private var avatarImage = ""
 
     @AppStorage("sloopy-native-favorites")
     private var favoritesRaw = "whatsapp,instagram,youtube,spotify"
@@ -17,21 +21,21 @@ struct SloopyHomeScreen: View {
     @AppStorage("sloopy-native-custom-shortcut-url")
     private var customShortcutURL = "https://mwlt.pages.dev/"
 
-    private var favoriteApps: [SloopyQuickApp] {
-        let ids = Set(favoritesRaw.split(separator: ",").map(String.init))
-        return SloopyQuickApp.all.filter { ids.contains($0.id) }
-    }
-
     @AppStorage("sloopy-native-routine-start")
     private var routineStartedAt = 0.0
 
     @AppStorage("sloopy-native-routine-last-minutes")
     private var lastRoutineMinutes = 0
 
+    @AppStorage("sloopy-focus-active-mode")
+    private var activeFocusMode = ""
+
     @AppStorage("sloopy-native-selected-camera")
     private var selectedCamera = "phSVFy5vl1g"
 
     @State private var cameraExpanded = false
+    @State private var isProfileEditorPresented = false
+    @State private var focusModeSheet: SloopyFocusMode?
 
     private let cameras: [(name: String, id: String)] = [
         ("CCTV 01", "phSVFy5vl1g"),
@@ -41,6 +45,11 @@ struct SloopyHomeScreen: View {
         ("CCTV 05", "EwxjPFnUDJI")
     ]
 
+    private var favoriteApps: [SloopyQuickApp] {
+        let ids = Set(favoritesRaw.split(separator: ",").map(String.init))
+        return SloopyQuickApp.all.filter { ids.contains($0.id) }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
@@ -48,6 +57,7 @@ struct SloopyHomeScreen: View {
                 hero
                 weatherCard
                 routineCard
+                workModeCard
                 cameraCard
             }
             .padding(.horizontal, 20)
@@ -55,26 +65,53 @@ struct SloopyHomeScreen: View {
             .padding(.bottom, 110)
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        .sheet(isPresented: $isProfileEditorPresented) {
+            ProfileEditorSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $focusModeSheet) { mode in
+            FocusModeSheet(mode: mode)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .task {
+            guard !activeFocusMode.isEmpty else { return }
+            try? SloopyFocusService.shared.applySelection(
+                SloopyFocusService.shared.loadSelection()
+            )
+        }
     }
 
     private var header: some View {
         HStack {
-            HStack(spacing: 11) {
-                Text(avatar)
-                    .font(.system(size: 26))
-                    .frame(width: 45, height: 45)
-                    .background(Color.accentColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 15))
+            Button {
+                isProfileEditorPresented = true
+            } label: {
+                HStack(spacing: 11) {
+                    profileAvatar
+                        .frame(width: 45, height: 45)
+                        .background(Color.accentColor.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(profileName)
-                        .font(.headline)
-                    Text("PERSONAL SPACE")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(1.2)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(profileName.isEmpty ? "My profile" : profileName)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Text("PERSONAL SPACE")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(1.2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.tertiary)
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Edit profile")
 
             Spacer()
 
@@ -107,6 +144,22 @@ struct SloopyHomeScreen: View {
         }
     }
 
+    @ViewBuilder
+    private var profileAvatar: some View {
+        if let data = Data(base64Encoded: avatarImage),
+           let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 45, height: 45)
+                .clipped()
+        } else {
+            Text(avatar)
+                .font(.system(size: 26))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
     private var hero: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -117,11 +170,11 @@ struct SloopyHomeScreen: View {
 
                 Spacer()
 
-                Text("PERSONAL SPACE")
+                Text(activeFocusMode.isEmpty ? "PERSONAL SPACE" : "FOCUS ACTIVE")
                     .font(.system(size: 9, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.5), in: Capsule())
+                    .background(Color.primary.opacity(0.07), in: Capsule())
             }
 
             Text(Date.now, format: .dateTime.weekday(.wide).month(.wide).day())
@@ -182,7 +235,9 @@ struct SloopyHomeScreen: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Get Ready")
                         .font(.headline)
-                    Text("Leave the scroll behind.")
+                    Text(activeFocusMode == SloopyFocusMode.getReady.rawValue
+                         ? "Your selected distractions are paused."
+                         : "A calmer start, without the scroll.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -191,19 +246,14 @@ struct SloopyHomeScreen: View {
             }
 
             Button {
-                if routineStartedAt == 0 {
-                    routineStartedAt = Date().timeIntervalSince1970
-                } else {
-                    lastRoutineMinutes = max(
-                        1,
-                        Int((Date().timeIntervalSince1970 - routineStartedAt) / 60)
-                    )
-                    routineStartedAt = 0
-                }
+                focusModeSheet = .getReady
             } label: {
                 Label(
-                    routineStartedAt == 0 ? "Start routine" : "Finish routine",
-                    systemImage: routineStartedAt == 0 ? "play.fill" : "checkmark"
+                    activeFocusMode == SloopyFocusMode.getReady.rawValue
+                        ? "Manage session"
+                        : "Start Get Ready",
+                    systemImage: activeFocusMode == SloopyFocusMode.getReady.rawValue
+                        ? "slider.horizontal.3" : "play.fill"
                 )
                 .font(.subheadline.weight(.bold))
                 .frame(maxWidth: .infinity)
@@ -231,6 +281,48 @@ struct SloopyHomeScreen: View {
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 22))
+    }
+
+    private var workModeCard: some View {
+        Button {
+            focusModeSheet = .work
+        } label: {
+            HStack(spacing: 13) {
+                Image(systemName: "briefcase.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 45, height: 45)
+                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 7) {
+                        Text("Work Mode")
+                            .font(.headline)
+                        if activeFocusMode == SloopyFocusMode.work.rawValue {
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+
+                    Text(activeFocusMode == SloopyFocusMode.work.rawValue
+                         ? "Focus is on · open to manage your task"
+                         : "Keep selected distractions out of the way.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(16)
+            .background(.background, in: RoundedRectangle(cornerRadius: 22))
+            .contentShape(RoundedRectangle(cornerRadius: 22))
+        }
+        .buttonStyle(.plain)
     }
 
     private var cameraCard: some View {
@@ -283,36 +375,5 @@ struct SloopyHomeScreen: View {
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 22))
-    }
-}
-
-private struct HomeSectionCard: View {
-    let title: String
-    let subtitle: String
-    let symbol: String
-
-    var body: some View {
-        HStack(spacing: 13) {
-            Image(systemName: symbol)
-                .font(.system(size: 23))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 44, height: 44)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(1)
-                    .foregroundStyle(.secondary)
-                Text(subtitle)
-                    .font(.caption)
-            }
-
-            Spacer()
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.tertiary)
-        }
-        .padding(15)
-        .background(.background, in: RoundedRectangle(cornerRadius: 21))
     }
 }
