@@ -406,7 +406,7 @@ struct SettingsScreen: View {
                             "Underlying: \(underlyingError.domain) (code \(underlyingError.code))"
                         )
                     }
-                    appIconError = details.joined(separator: "\\n")
+                    appIconError = details.joined(separator: "\n")
                 } else {
                     selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
                 }
