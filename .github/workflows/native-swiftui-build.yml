@@ -1,6 +1,12 @@
 name: Sloopy Native SwiftUI Build
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Native/**'
+      - '.github/workflows/native-swiftui-build.yml'
   pull_request:
     branches:
       - main
@@ -14,7 +20,7 @@ permissions:
 
 jobs:
   build:
-    name: Compile SwiftUI App
+    name: Build iOS Simulator and Device
     runs-on: macos-26
 
     steps:
@@ -41,6 +47,36 @@ jobs:
             -scheme Sloopy \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/SloopyNativeDerivedData" \
+            -derivedDataPath "$RUNNER_TEMP/SloopySimulator" \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Compile for iPhone Device
+        run: |
+          xcodebuild \
+            -project Native/Sloopy.xcodeproj \
+            -scheme Sloopy \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/SloopyDevice" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package device build artifact
+        run: |
+          APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
+          test -d "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$APP_PATH" \
+            "$RUNNER_TEMP/Sloopy-iOS-device-build-unsigned.zip"
+
+      - name: Upload iPhone build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sloopy-iOS-device-build-unsigned
+          path: ${{ runner.temp }}/Sloopy-iOS-device-build-unsigned.zip
+          if-no-files-found: error
+          retention-days: 7
