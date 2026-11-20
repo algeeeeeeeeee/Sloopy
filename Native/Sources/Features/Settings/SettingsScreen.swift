@@ -57,6 +57,10 @@ extension Color {
 }
 
 struct SettingsScreen: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? SloopyPalette.color(for: accent, customHex: accentHex) }
+
     @AppStorage("sloopy-profile-name") private var profileName = "My profile"
     @AppStorage("sloopy-avatar") private var avatar = "🌿"
     @AppStorage("sloopy-native-avatar-image") private var avatarImage = ""
@@ -191,7 +195,7 @@ struct SettingsScreen: View {
                             .frame(height: 48)
                             .background(
                                 avatar == choice && avatarImage.isEmpty
-                                    ? Color.accentColor.opacity(0.16)
+                                    ? accentColor.opacity(0.16)
                                     : Color(uiColor: .secondarySystemGroupedBackground),
                                 in: RoundedRectangle(cornerRadius: 13)
                             )
@@ -231,7 +235,7 @@ struct SettingsScreen: View {
             Text(avatar)
                 .font(.system(size: 33))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 19))
+                .background(accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 19))
         }
     }
 
@@ -325,7 +329,7 @@ struct SettingsScreen: View {
                             if selectedAppIconName == (option.alternateName ?? "") {
                                 Label("Selected", systemImage: "checkmark.circle.fill")
                                     .font(.system(size: 9, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(accentColor)
                             } else {
                                 Text(" ")
                                     .font(.system(size: 9))
@@ -335,7 +339,7 @@ struct SettingsScreen: View {
                         .padding(.vertical, 10)
                         .background(
                             selectedAppIconName == (option.alternateName ?? "")
-                                ? Color.accentColor.opacity(0.09)
+                                ? accentColor.opacity(0.09)
                                 : Color(uiColor: .secondarySystemGroupedBackground),
                             in: RoundedRectangle(cornerRadius: 17)
                         )
@@ -343,7 +347,7 @@ struct SettingsScreen: View {
                             RoundedRectangle(cornerRadius: 17)
                                 .stroke(
                                     selectedAppIconName == (option.alternateName ?? "")
-                                        ? Color.accentColor
+                                        ? accentColor
                                         : Color.primary.opacity(0.05),
                                     lineWidth: selectedAppIconName == (option.alternateName ?? "") ? 1.5 : 1
                                 )
@@ -410,7 +414,7 @@ struct SettingsScreen: View {
                     Label(app.name, systemImage: app.symbol)
                         .font(.subheadline.weight(.medium))
                 }
-                .tint(.accentColor)
+                .tint(accentColor)
             }
 
             if !customQuickApps.isEmpty {
@@ -538,6 +542,10 @@ private extension View {
 
 
 private struct QuickLaunchEditorSheet: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var url = ""
@@ -587,18 +595,18 @@ private struct QuickLaunchEditorSheet: View {
                             } label: {
                                 Image(systemName: option)
                                     .font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(symbol == option ? Color.accentColor : Color.secondary)
+                                    .foregroundStyle(symbol == option ? accentColor : Color.secondary)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 42)
                                     .background(
                                         symbol == option
-                                            ? Color.accentColor.opacity(0.13)
+                                            ? accentColor.opacity(0.13)
                                             : Color(uiColor: .secondarySystemGroupedBackground),
                                         in: RoundedRectangle(cornerRadius: 11)
                                     )
                                     .overlay {
                                         RoundedRectangle(cornerRadius: 11)
-                                            .stroke(symbol == option ? Color.accentColor : Color.clear, lineWidth: 1.3)
+                                            .stroke(symbol == option ? accentColor : Color.clear, lineWidth: 1.3)
                                     }
                             }
                             .buttonStyle(.plain)
@@ -656,25 +664,25 @@ private struct SloopyAppIconOption: Identifiable {
             id: "crystal",
             title: "Crystal",
             previewAssetName: "SloopyIconPreview-Crystal",
-            alternateName: "AppIcon-Crystal"
+            alternateName: "AppIconCrystal"
         ),
         SloopyAppIconOption(
             id: "eye",
             title: "Eye",
             previewAssetName: "SloopyIconPreview-Eye",
-            alternateName: "AppIcon-Eye"
+            alternateName: "AppIconEye"
         ),
         SloopyAppIconOption(
             id: "cat",
             title: "Cat",
             previewAssetName: "SloopyIconPreview-Cat",
-            alternateName: "AppIcon-Cat"
+            alternateName: "AppIconCat"
         ),
         SloopyAppIconOption(
             id: "cube",
             title: "Cube",
             previewAssetName: "SloopyIconPreview-Cube",
-            alternateName: "AppIcon-Cube"
+            alternateName: "AppIconCube"
         )
     ]
 }
