@@ -174,7 +174,7 @@ struct SloopyHomeScreen: View {
                     .font(.system(size: 9, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.5), in: Capsule())
+                    .background(Color.primary.opacity(0.07), in: Capsule())
             }
 
             Text(Date.now, format: .dateTime.weekday(.wide).month(.wide).day())
