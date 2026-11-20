@@ -35,17 +35,6 @@ struct SloopyAccentOption: Identifiable {
     ]
 }
 
-private struct SloopyAccentColorEnvironmentKey: EnvironmentKey {
-    static let defaultValue = Color(hex: "#7898AA")
-}
-
-extension EnvironmentValues {
-    var sloopyAccentColor: Color {
-        get { self[SloopyAccentColorEnvironmentKey.self] }
-        set { self[SloopyAccentColorEnvironmentKey.self] = newValue }
-    }
-}
-
 enum SloopyPalette {
     static func color(for name: String, customHex: String = "#7898AA") -> Color {
         if name == "custom" {
