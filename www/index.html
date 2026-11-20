@@ -482,6 +482,168 @@ function toggleRoutine(){const b=document.getElementById('routineBtn'),s=documen
 let deferredInstallPrompt=null;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;const btn=document.getElementById('installAppButton');if(btn)btn.textContent='＋ Install Sloopy!';});
 async function installSloopy(){if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return;}const help=document.getElementById('installHelp');if(help)help.textContent=/iphone|ipad|ipod/i.test(navigator.userAgent)?'On iPhone: open in Safari → Share → Add to Home Screen → Add. If you do not see this option, confirm the site is opened over HTTPS.':'Use your browser menu and choose Install app or Add to Home Screen.';}
 async function registerPwaWorker(){if(location.protocol==='capacitor:'||location.protocol==='ionic:')return;if(!('serviceWorker' in navigator)||!window.isSecureContext)return;try{const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});registration.update().catch(()=>{});}catch(error){console.warn('Sloopy offline support could not be registered.',error);}}
+/* ===== Restored helpers: shared escaping, stamp collection, Daily Discovery actions, Quick Notes ===== */
+function escapeHTML(value){
+  return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+/* Stamp collection: one slot per fact in the starter pack; state.points is the lifetime stamp count. */
+function updatePoints(){
+  const stamps=Math.max(0,Math.floor(Number(state.points)||0));
+  const label=`${stamps} ${stamps===1?'stamp':'stamps'}`;
+  const count=document.getElementById('collectionCount');
+  if(count)count.textContent=label;
+  const dots=document.getElementById('rewardDots');
+  if(dots){
+    dots.setAttribute('role','img');
+    dots.setAttribute('aria-label',`${label} collected`);
+    dots.innerHTML=Array.from({length:dailyFacts.length},(_,i)=>{
+      const earned=i<stamps;
+      return `<span class="reward-dot${earned?' earned':''}" aria-hidden="true">${earned?'✦':'·'}</span>`;
+    }).join('');
+  }
+}
+
+/* Daily Discovery actions. Progress is re-read first so a page left open past midnight starts the new day cleanly. */
+function revealFact(){
+  loadDailyProgress();
+  state.revealed=true;
+  saveDailyProgress();
+  renderDailyDiscovery();
+}
+function chooseAnswer(button){
+  loadDailyProgress();
+  const value=button&&button.dataset?button.dataset.answer:'';
+  const {fact}=getTodayFact();
+  if(state.revealed&&!state.answered&&fact.options.includes(value)){
+    state.answer=value;
+    saveDailyProgress();
+  }
+  renderDailyDiscovery();
+}
+function checkQuiz(){
+  loadDailyProgress();
+  const {fact}=getTodayFact();
+  if(!state.revealed||state.answered||!fact.options.includes(state.answer)){renderDailyDiscovery();return;}
+  const before={answered:state.answered,claimed:state.claimed,points:state.points};
+  state.answered=true;
+  state.claimed=state.answer===fact.answer;
+  if(state.claimed)state.points=Math.max(0,Math.floor(Number(state.points)||0))+1;
+  try{
+    saveDailyProgress();
+    save();
+  }catch(error){
+    Object.assign(state,before);
+    try{saveDailyProgress();save();}catch(ignore){}
+    alert('Sloopy could not save your answer. Your device storage may be full.');
+  }
+  updatePoints();
+  renderDailyDiscovery();
+}
+
+/* Quick Notes. state.notes is an array of plain strings (newest first); edit/delete address notes by index. */
+let noteEditIndex=-1,noteEditDraft='',noteDeleteIndex=-1;
+function noteList(){
+  if(!Array.isArray(state.notes))state.notes=[];
+  return state.notes;
+}
+function persistNotes(previous){
+  try{save();return true;}
+  catch(error){
+    state.notes=previous;
+    alert('Sloopy could not save your notes. Your device storage may be full.');
+    return false;
+  }
+}
+function updateNoteDraft(value){noteEditDraft=value;}
+function renderNotes(){
+  const list=document.getElementById('notesList');
+  if(!list)return;
+  const notes=Array.isArray(state.notes)?state.notes:[];
+  if(!notes.length){
+    list.innerHTML='<div class="card empty">No notes yet. Write your first one above.</div>';
+    return;
+  }
+  const locked=noteEditIndex>=0;
+  list.innerHTML=notes.map((note,i)=>{
+    if(i===noteEditIndex){
+      return `<article class="card note-item" style="flex-direction:column;align-items:stretch;gap:10px"><textarea id="noteEditInput" rows="3" aria-label="Edit note" oninput="updateNoteDraft(this.value)">\n${escapeHTML(noteEditDraft)}</textarea><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="gallery-clear" onclick="cancelNoteEdit()">Cancel</button><button type="button" class="primary-btn" onclick="saveNoteEdit(${i})">Save</button></div></article>`;
+    }
+    let actions;
+    if(i===noteDeleteIndex){
+      actions=`<span style="display:flex;gap:6px;flex:none"><button type="button" class="secondary-btn" style="padding:7px 11px;font-size:11px" onclick="deleteNote(${i})">Delete</button><button type="button" class="gallery-clear" style="padding:7px 11px" onclick="cancelDeleteNote()">Keep</button></span>`;
+    }else{
+      const style=`padding:6px 8px${locked?';opacity:.35':''}`;
+      const off=locked?' disabled':'';
+      actions=`<button type="button" class="delete-btn" style="${style}" aria-label="Edit note" title="Edit"${off} onclick="editNote(${i})">✎</button><button type="button" class="delete-btn" style="${style}" aria-label="Delete note" title="Delete"${off} onclick="askDeleteNote(${i})">×</button>`;
+    }
+    return `<article class="card note-item"><p style="overflow-wrap:anywhere;white-space:pre-wrap">${escapeHTML(String(note))}</p>${actions}</article>`;
+  }).join('');
+}
+function addNote(){
+  const input=document.getElementById('noteInput');
+  if(!input)return;
+  const text=input.value.trim();
+  if(!text){input.focus();return;}
+  const previous=noteList().slice();
+  state.notes=[text,...previous];
+  if(!persistNotes(previous))return;
+  if(noteEditIndex>=0)noteEditIndex+=1;
+  if(noteDeleteIndex>=0)noteDeleteIndex+=1;
+  input.value='';
+  renderNotes();
+}
+function editNote(index){
+  const notes=noteList();
+  if(noteEditIndex>=0||!Number.isInteger(index)||index<0||index>=notes.length)return;
+  noteDeleteIndex=-1;
+  noteEditIndex=index;
+  noteEditDraft=String(notes[index]);
+  renderNotes();
+  const field=document.getElementById('noteEditInput');
+  if(field){field.focus();field.setSelectionRange(field.value.length,field.value.length);}
+}
+function cancelNoteEdit(){
+  noteEditIndex=-1;
+  noteEditDraft='';
+  renderNotes();
+}
+function saveNoteEdit(index){
+  const notes=noteList();
+  const field=document.getElementById('noteEditInput');
+  if(noteEditIndex!==index||!field||index<0||index>=notes.length)return;
+  const text=field.value.trim();
+  if(!text){field.focus();return;}
+  const previous=notes.slice();
+  const next=notes.slice();
+  next[index]=text;
+  state.notes=next;
+  if(!persistNotes(previous))return;
+  noteEditIndex=-1;
+  noteEditDraft='';
+  renderNotes();
+}
+function askDeleteNote(index){
+  const notes=noteList();
+  if(noteEditIndex>=0||!Number.isInteger(index)||index<0||index>=notes.length)return;
+  noteDeleteIndex=index;
+  renderNotes();
+}
+function cancelDeleteNote(){
+  noteDeleteIndex=-1;
+  renderNotes();
+}
+function deleteNote(index){
+  const notes=noteList();
+  if(noteDeleteIndex!==index||index<0||index>=notes.length)return;
+  const previous=notes.slice();
+  state.notes=previous.filter((_,i)=>i!==index);
+  if(!persistNotes(previous))return;
+  noteDeleteIndex=-1;
+  renderNotes();
+}
+/* ===== End restored helpers ===== */
+
 function init(){try{history.replaceState({sloopyPage:'home'},'',location.pathname+location.search+'#home');}catch(e){}activePage='home';updateDockActive('home');const savedLocation=localStorage.getItem('sloopy-location');if(savedLocation)document.getElementById('locationInput').value=savedLocation;applyProfile();applyTheme();renderQuickSidebar();renderCameraMenu();renderNotes();updatePoints();loadDailyProgress();renderDailyDiscovery();renderAppToggles();renderCustomPwaSettings();if(state.routineStart&&Date.now()-state.routineStart>24*60*60*1000){state.routineStart=null;localStorage.removeItem('sloopy-routine-start');}updateRoutineUI();const initialPlace=localStorage.getItem('sloopy-location')||'Pontianak';document.getElementById('locationInput').value=initialPlace;loadWeather();updateHomeClock();installPageSwipes();registerPwaWorker();setInterval(updateHomeClock,30000);if(state.routineStart)setInterval(updateRoutineUI,60000);}
 init();
 document.addEventListener('click',event=>{const nav=document.getElementById('floatingNav');if(nav&&nav.classList.contains('expanded')&&!nav.contains(event.target))closeNavDock();});
