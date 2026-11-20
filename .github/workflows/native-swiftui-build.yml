@@ -74,7 +74,7 @@ jobs:
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
           /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
-          for ICON in AppIcon-Crystal AppIcon-Eye AppIcon-Cat AppIcon-Cube; do
+          for ICON in AppIconCrystal AppIconEye AppIconCat AppIconCube; do
             grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
           done
           echo "Verified Assets.car and all four alternate app icons."
