@@ -3,9 +3,7 @@ import PhotosUI
 import UIKit
 
 struct SloopyHomeScreen: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     @AppStorage("sloopy-profile-name")
     private var profileName = "My profile"
