@@ -3,9 +3,7 @@ import PhotosUI
 import UIKit
 
 struct ProfileEditorSheet: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     @Environment(\.dismiss) private var dismiss
 
