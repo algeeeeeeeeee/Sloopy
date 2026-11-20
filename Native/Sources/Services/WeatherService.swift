@@ -209,9 +209,7 @@ enum WeatherService {
 }
 
 struct NativeWeatherCard: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     @AppStorage("sloopy-native-weather-location")
     private var city = "Pontianak"
