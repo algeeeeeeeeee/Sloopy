@@ -25,9 +25,13 @@ enum SloopyTab: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @State private var selectedTab: SloopyTab = .home
-    @AppStorage("sloopy-native-navigation-collapsed")
-    private var isNavigationCollapsed = false
+    @AppStorage("sloopy-native-navigation-collapsed-v2")
+    private var isNavigationCollapsed = true
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -47,54 +51,72 @@ struct ContentView: View {
     }
 
     private var navigationDock: some View {
-        HStack(spacing: isNavigationCollapsed ? 9 : 4) {
-            ForEach(SloopyTab.allCases) { tab in
+        HStack(spacing: isNavigationCollapsed ? 10 : 4) {
+            if isNavigationCollapsed {
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
-                        selectedTab = tab
+                        isNavigationCollapsed = false
                     }
                 } label: {
-                    Group {
-                        if isNavigationCollapsed {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: 18, weight: .semibold))
-                        } else {
-                            VStack(spacing: 5) {
-                                Image(systemName: tab.symbol)
-                                    .font(.system(size: 17, weight: .semibold))
-                                Text(tab.title)
-                                    .font(.system(size: 10, weight: .semibold))
-                            }
-                        }
+                    HStack(spacing: 9) {
+                        Image(systemName: selectedTab.symbol)
+                            .font(.system(size: 17, weight: .semibold))
+                        Text(selectedTab.title)
+                            .font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.secondary)
                     }
-                    .foregroundStyle(selectedTab == tab ? Color.accentColor : Color.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: isNavigationCollapsed ? 38 : 48)
-                    .background {
-                        if selectedTab == tab {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.accentColor.opacity(0.13))
-                        }
-                    }
-                    .contentShape(Rectangle())
+                    .foregroundStyle(accentColor)
+                    .frame(height: 40)
+                    .padding(.horizontal, 12)
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(tab.title)
-            }
-
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
-                    isNavigationCollapsed.toggle()
+                .accessibilityLabel("Expand navigation")
+            } else {
+                ForEach(SloopyTab.allCases) { tab in
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                            selectedTab = tab
+                            isNavigationCollapsed = true
+                        }
+                    } label: {
+                        VStack(spacing: 5) {
+                            Image(systemName: tab.symbol)
+                                .font(.system(size: 17, weight: .semibold))
+                            Text(tab.title)
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(selectedTab == tab ? accentColor : Color.secondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background {
+                            if selectedTab == tab {
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(accentColor.opacity(0.13))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(tab.title)
                 }
-            } label: {
-                Image(systemName: isNavigationCollapsed ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 29, height: isNavigationCollapsed ? 38 : 48)
-                    .contentShape(Rectangle())
+
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                        isNavigationCollapsed = true
+                    }
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 29, height: 48)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Collapse navigation")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isNavigationCollapsed ? "Expand navigation" : "Collapse navigation")
         }
         .padding(7)
         .background(.ultraThinMaterial, in: Capsule())
@@ -107,6 +129,10 @@ struct ContentView: View {
 }
 
 struct HomeView: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -122,7 +148,7 @@ struct HomeView: View {
                     Spacer()
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 38))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(accentColor)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -150,6 +176,10 @@ struct HomeView: View {
 }
 
 struct HomeCard: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     let title: String
     let subtitle: String
     let symbol: String
@@ -158,9 +188,9 @@ struct HomeCard: View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
                 .font(.system(size: 22))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
                 .frame(width: 48, height: 48)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 15))
+                .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 15))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
@@ -177,6 +207,10 @@ struct HomeCard: View {
 }
 
 struct PlaceholderPage: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     let title: String
     let symbol: String
 
@@ -184,7 +218,7 @@ struct PlaceholderPage: View {
         VStack(spacing: 12) {
             Image(systemName: symbol)
                 .font(.system(size: 38))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(accentColor)
             Text(title)
                 .font(.largeTitle.bold())
             Text("Your space is being prepared.")
