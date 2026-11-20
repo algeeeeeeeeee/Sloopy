@@ -127,7 +127,17 @@ enum WeatherService {
         let response = try JSONDecoder().decode(ForecastResponse.self, from: data)
         let current = response.current
 
-        let hours = response.hourly.time.indices.prefix(8).compactMap { index -> WeatherHour? in
+        let localTimeFormatter = DateFormatter()
+        localTimeFormatter.locale = Locale(identifier: "en_US_POSIX")
+        localTimeFormatter.timeZone = .current
+        localTimeFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        let currentLocalHour = localTimeFormatter.string(from: Date())
+
+        let upcomingHourIndices = response.hourly.time.indices
+            .filter { response.hourly.time[$0] >= currentLocalHour }
+            .prefix(8)
+
+        let hours = upcomingHourIndices.compactMap { index -> WeatherHour? in
             guard response.hourly.temperature.indices.contains(index),
                   response.hourly.precipitationProbability.indices.contains(index),
                   response.hourly.code.indices.contains(index) else { return nil }
