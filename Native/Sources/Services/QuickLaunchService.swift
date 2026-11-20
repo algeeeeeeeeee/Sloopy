@@ -8,12 +8,9 @@ enum QuickLaunchService {
     }
 
     static func openWebShortcut(_ rawURL: String) {
-        guard
-            let url = URL(string: rawURL),
-            let scheme = url.scheme?.lowercased(),
-            scheme == "https" || scheme == "http"
-        else { return }
-
+        guard let url = URL(string: rawURL),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http" else { return }
         UIApplication.shared.open(url)
     }
 }
