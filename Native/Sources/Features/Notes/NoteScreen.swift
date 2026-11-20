@@ -14,6 +14,7 @@ final class SloopyNote {
 }
 
 struct NotesScreen: View {
+    @Environment(\.sloopyAccentColor) private var accentColor
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \SloopyNote.createdAt, order: .reverse)
@@ -44,7 +45,7 @@ struct NotesScreen: View {
                             .frame(maxWidth: .infinity)
                             .padding(13)
                             .background(
-                                Color.accentColor,
+                                accentColor,
                                 in: RoundedRectangle(cornerRadius: 14)
                             )
                             .foregroundStyle(.white)
