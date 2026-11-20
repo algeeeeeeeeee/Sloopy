@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="dark">
+<title>Sloopy CCTV Player</title>
+<style>
+* { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: #172831;
+    color: #edf3f5;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.player {
+    width: 100%;
+    overflow: hidden;
+    background: #172831;
+}
+.video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #101a20;
+}
+iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.status {
+    padding: 9px 12px;
+    font-size: 11px;
+    color: #b8c8ce;
+}
+a { color: #9bc2d2; }
+</style>
+</head>
+<body>
+<div class="player">
+    <div class="video">
+        <iframe
+            id="youtubePlayer"
+            title="Sloopy live CCTV"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+        </iframe>
+    </div>
+    <div class="status">
+        If this stream cannot be embedded,
+        <a id="youtubeFallback" target="_blank" rel="noopener">
+            open it on YouTube
+        </a>.
+    </div>
+</div>
+
+<script>
+const cameras = {
+    phSVFy5vl1g: "CCTV 01",
+    cNnBLil3Tak: "CCTV 02",
+    Nzajq1hQNQs: "CCTV 03",
+    VErhIjCOJ2Q: "CCTV 04",
+    EwxjPFnUDJI: "CCTV 05"
+};
+
+const requested = new URLSearchParams(location.search).get("camera");
+const videoId = Object.hasOwn(cameras, requested)
+    ? requested
+    : Object.keys(cameras)[0];
+
+const origin = encodeURIComponent(location.origin);
+
+const playerURL =
+    `https://www.youtube.com/embed/${videoId}` +
+    `?playsinline=1&rel=0&enablejsapi=1&origin=${origin}`;
+
+document.getElementById("youtubePlayer").src = playerURL;
+document.getElementById("youtubeFallback").href =
+    `https://www.youtube.com/watch?v=${videoId}`;
+document.title = cameras[videoId] + " · Sloopy";
+</script>
+</body>
+</html>
