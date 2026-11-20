@@ -1,0 +1,42 @@
+{
+  "id": "./",
+  "name": "Sloopy! \u2014 Your Daily Space",
+  "short_name": "Sloopy!",
+  "description": "A calm personal daily space for cameras, discoveries, notes, and routines.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#eef2f5",
+  "theme_color": "#eef2f5",
+  "lang": "en",
+  "categories": [
+    "lifestyle",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
