@@ -145,11 +145,11 @@ private func drawIcon(_ spec: IconSpec) -> Data {
         pixelsHigh: side,
         bitsPerSample: 8,
         samplesPerPixel: 4,
-        hasAlpha: false,
+        hasAlpha: true,
         isPlanar: false,
         colorSpaceName: .deviceRGB,
-        bytesPerRow: 0,
-        bitsPerPixel: 0
+        bytesPerRow: side * 4,
+        bitsPerPixel: 32
     )!
 
     NSGraphicsContext.saveGraphicsState()
