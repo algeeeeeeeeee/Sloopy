@@ -44,7 +44,6 @@ struct ContentView: View {
             navigationDock
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .preferredColorScheme(nil)
     }
 
     private var navigationDock: some View {
@@ -99,8 +98,8 @@ struct ContentView: View {
         }
         .padding(7)
         .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 18, y: 7)
+        .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1))
+        .shadow(color: Color.primary.opacity(0.08), radius: 18, y: 7)
         .padding(.horizontal, 22)
         .padding(.bottom, 10)
         .animation(.spring(response: 0.3, dampingFraction: 0.82), value: isNavigationCollapsed)
