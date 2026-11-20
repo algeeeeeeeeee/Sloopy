@@ -104,9 +104,7 @@ private struct DiscoveryFact: Identifiable {
 }
 
 struct DiscoverScreen: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     @AppStorage("sloopy-native-discovery-date")
     private var savedDate = ""
