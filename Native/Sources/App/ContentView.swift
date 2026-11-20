@@ -31,10 +31,10 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
-                case .home: HomeView()
-                case .discover: PlaceholderPage(title: "Discover", symbol: "safari")
-                case .notes: PlaceholderPage(title: "Notes", symbol: "note.text")
-                case .settings: PlaceholderPage(title: "Settings", symbol: "slider.horizontal.3")
+                case .home: SloopyHomeScreen()
+                case .discover: DiscoverScreen()
+                case .notes: NotesScreen()
+                case .settings: SettingsScreen()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
