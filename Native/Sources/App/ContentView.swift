@@ -26,6 +26,8 @@ enum SloopyTab: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @State private var selectedTab: SloopyTab = .home
+    @AppStorage("sloopy-native-navigation-collapsed")
+    private var isNavigationCollapsed = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -39,41 +41,69 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            HStack(spacing: 5) {
-                ForEach(SloopyTab.allCases) { tab in
-                    Button {
-                        withAnimation(.spring(response: 0.3)) {
-                            selectedTab = tab
-                        }
-                    } label: {
-                        VStack(spacing: 5) {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: 18, weight: .semibold))
-                            Text(tab.title)
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(selectedTab == tab ? Color.accentColor : Color.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background {
-                            if selectedTab == tab {
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.accentColor.opacity(0.12))
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(7)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
-            .shadow(color: .black.opacity(0.08), radius: 18, y: 7)
-            .padding(.horizontal, 22)
-            .padding(.bottom, 10)
+            navigationDock
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .preferredColorScheme(nil)
+    }
+
+    private var navigationDock: some View {
+        HStack(spacing: isNavigationCollapsed ? 9 : 4) {
+            ForEach(SloopyTab.allCases) { tab in
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    Group {
+                        if isNavigationCollapsed {
+                            Image(systemName: tab.symbol)
+                                .font(.system(size: 18, weight: .semibold))
+                        } else {
+                            VStack(spacing: 5) {
+                                Image(systemName: tab.symbol)
+                                    .font(.system(size: 17, weight: .semibold))
+                                Text(tab.title)
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                        }
+                    }
+                    .foregroundStyle(selectedTab == tab ? Color.accentColor : Color.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: isNavigationCollapsed ? 38 : 48)
+                    .background {
+                        if selectedTab == tab {
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.accentColor.opacity(0.13))
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.title)
+            }
+
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                    isNavigationCollapsed.toggle()
+                }
+            } label: {
+                Image(systemName: isNavigationCollapsed ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 29, height: isNavigationCollapsed ? 38 : 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isNavigationCollapsed ? "Expand navigation" : "Collapse navigation")
+        }
+        .padding(7)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
+        .shadow(color: .black.opacity(0.08), radius: 18, y: 7)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 10)
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: isNavigationCollapsed)
     }
 }
 
