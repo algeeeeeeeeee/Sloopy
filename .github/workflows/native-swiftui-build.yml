@@ -83,11 +83,3 @@ jobs:
           path: ${{ runner.temp }}/Sloopy-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
-
-      - name: Upload iPhone build
-        uses: actions/upload-artifact@v4
-        with:
-          name: Sloopy-iOS-device-build-unsigned
-          path: ${{ runner.temp }}/Sloopy-iOS-device-build-unsigned.zip
-          if-no-files-found: error
-          retention-days: 7
