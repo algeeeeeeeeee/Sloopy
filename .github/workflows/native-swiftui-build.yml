@@ -27,6 +27,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
+      - name: Generate app icon assets
+        run: swift Native/Scripts/GenerateAppIcons.swift Native/Resources/Assets.xcassets
+
       - name: Show Xcode version
         run: xcodebuild -version
 
@@ -64,6 +67,17 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             build
+
+      - name: Verify app resources and alternate icons
+        run: |
+          APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
+          test -d "$APP_PATH"
+          test -f "$APP_PATH/Assets.car"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
+          for ICON in AppIcon-Crystal AppIcon-Eye AppIcon-Cat AppIcon-Cube; do
+            grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
+          done
+          echo "Verified Assets.car and all four alternate app icons."
 
       - name: Package unsigned IPA
         run: |
