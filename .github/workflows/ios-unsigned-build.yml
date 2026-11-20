@@ -66,17 +66,16 @@ jobs:
             -target App \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/SloopyDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/SloopyBuild/Release-iphoneos" \
             build
 
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
-          APP_PATH="$RUNNER_TEMP/SloopyDerivedData/Build/Products/Release-iphoneos/App.app"
+          APP_PATH="$RUNNER_TEMP/SloopyBuild/Release-iphoneos/App.app"
           test -d "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/App.app"
