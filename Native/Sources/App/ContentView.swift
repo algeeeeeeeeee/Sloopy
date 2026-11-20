@@ -25,9 +25,10 @@ enum SloopyTab: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
-    @Environment(\.tint) private var tint
+    @AppStorage("sloopy-native-accent") private var accent = "blue"
+    @AppStorage("sloopy-native-accent-hex") private var accentHex = "#7898AA"
 
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
 
     @State private var selectedTab: SloopyTab = .home
     @AppStorage("sloopy-native-navigation-collapsed-v2")
@@ -48,6 +49,7 @@ struct ContentView: View {
             navigationDock
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        .tint(accentColor)
     }
 
     private var navigationDock: some View {
@@ -129,9 +131,7 @@ struct ContentView: View {
 }
 
 struct HomeView: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     var body: some View {
         ScrollView {
@@ -176,9 +176,7 @@ struct HomeView: View {
 }
 
 struct HomeCard: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     let title: String
     let subtitle: String
@@ -207,9 +205,7 @@ struct HomeCard: View {
 }
 
 struct PlaceholderPage: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { Color.accentColor }
 
     let title: String
     let symbol: String
