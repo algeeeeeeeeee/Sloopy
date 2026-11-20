@@ -6,7 +6,8 @@
   "scripts": {
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "check": "node scripts/check.mjs"
   },
   "dependencies": {
     "@capacitor/core": "8.6.2",
@@ -14,5 +15,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.2"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

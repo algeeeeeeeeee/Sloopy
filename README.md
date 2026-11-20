@@ -1,13 +1,29 @@
-# Sloopy! — Capacitor iOS preparation
 
-This project contains the Sloopy! PWA assets inside `www/` plus a Capacitor iOS wrapper configuration.
+# Sloopy! — Capacitor iOS Project
 
-## Important
+This repository contains the Sloopy! PWA assets inside `www/` and its Capacitor 8.6.2 iOS wrapper configuration.
 
-- This is a **source project**, not an already compiled IPA.
-- iOS compilation requires a macOS/Xcode runner. Capacitor 8 requires Xcode 26.0+ and supports iOS 15+.
-- A GitHub Actions workflow is included to build an **unsigned** IPA on a hosted macOS runner.
-- An unsigned IPA is not normally installable on a standard iPhone. A normal install needs Apple-accepted signing/provisioning.
-- No signing credentials or jailbreak-specific bypass instructions are included.
+## Project Status
 
-See `README-IPA.md` for the build workflow and limitations.
+- This is a source project, not an already compiled IPA.
+- Node.js 22 or newer is required.
+- `npm ci` installs dependencies from the committed lockfile.
+- `npm run check` validates project configuration and application assets.
+
+## GitHub Actions
+
+Two workflows are configured:
+
+- **Sloopy CI** — runs project checks and a non-blocking dependency audit.
+- **Sloopy iOS Unsigned Build** — uses a GitHub-hosted macOS 26 runner and Xcode to build an unsigned IPA.
+
+The iOS build workflow has been configured but its first successful GitHub Actions build has not yet been verified.
+
+## Important iOS Limitations
+
+- An unsigned IPA is not normally installable on a standard iPhone.
+- Normal installation requires Apple-accepted signing and provisioning.
+- This repository does not contain signing credentials or provisioning profiles.
+- No jailbreak-specific signing bypass is included.
+
+See [README-IPA.md](README-IPA.md) for build instructions and limitations.

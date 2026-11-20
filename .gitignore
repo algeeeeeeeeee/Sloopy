@@ -1,0 +1,14 @@
+node_modules/
+ios/
+dist/
+build/
+coverage/
+.DS_Store
+*.ipa
+*.xcarchive
+DerivedData/
+*.p12
+*.mobileprovision
+.env
+.env.*
+!.env.example
