@@ -50,6 +50,7 @@ struct ContentView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .tint(accentColor)
+        .environment(\.sloopyAccentColor, accentColor)
     }
 
     private var navigationDock: some View {
@@ -131,7 +132,7 @@ struct ContentView: View {
 }
 
 struct HomeView: View {
-    private var accentColor: Color { Color.accentColor }
+    @Environment(\.sloopyAccentColor) private var accentColor
 
     var body: some View {
         ScrollView {
@@ -176,7 +177,7 @@ struct HomeView: View {
 }
 
 struct HomeCard: View {
-    private var accentColor: Color { Color.accentColor }
+    @Environment(\.sloopyAccentColor) private var accentColor
 
     let title: String
     let subtitle: String
@@ -205,7 +206,7 @@ struct HomeCard: View {
 }
 
 struct PlaceholderPage: View {
-    private var accentColor: Color { Color.accentColor }
+    @Environment(\.sloopyAccentColor) private var accentColor
 
     let title: String
     let symbol: String
