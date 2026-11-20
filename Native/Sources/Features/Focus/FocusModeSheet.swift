@@ -1,5 +1,4 @@
 import SwiftUI
-import FamilyControls
 
 enum SloopyFocusMode: String, Identifiable {
     case getReady = "get-ready"
@@ -17,7 +16,7 @@ enum SloopyFocusMode: String, Identifiable {
     var subtitle: String {
         switch self {
         case .getReady: "Give yourself a quieter start."
-        case .work: "Keep distractions paused until your task is done."
+        case .work: "Set one clear goal and protect time for it."
         }
     }
 
@@ -31,7 +30,6 @@ enum SloopyFocusMode: String, Identifiable {
 
 struct FocusModeSheet: View {
     @Environment(\.tint) private var tint
-
     private var accentColor: Color { tint ?? .blue }
 
     @Environment(\.dismiss) private var dismiss
@@ -56,25 +54,12 @@ struct FocusModeSheet: View {
     @AppStorage("sloopy-work-mode-started-at")
     private var workStartedAt = 0.0
 
-    @State private var selection = FamilyActivitySelection()
-    @State private var isPickerPresented = false
-    @State private var isWorking = false
-    @State private var errorMessage: String?
-
-    private let focusService = SloopyFocusService.shared
-
     private var isModeActive: Bool {
         activeMode == mode.rawValue
     }
 
     private var anotherModeIsActive: Bool {
         !activeMode.isEmpty && activeMode != mode.rawValue
-    }
-
-    private var selectionCount: Int {
-        selection.applicationTokens.count
-            + selection.webDomainTokens.count
-            + selection.categoryTokens.count
     }
 
     var body: some View {
@@ -87,16 +72,7 @@ struct FocusModeSheet: View {
                         workGoalCard
                     }
 
-                    selectionCard
-
-                    if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
-                    }
+                    downtimeGuideCard
 
                     if isModeActive {
                         activeControls
@@ -105,11 +81,14 @@ struct FocusModeSheet: View {
                               systemImage: "lock.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .padding(13)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.background, in: RoundedRectangle(cornerRadius: 14))
                     } else {
                         startButton
                     }
 
-                    Text("Sloopy pauses only the apps and websites you select. Your phone remains usable for everything else.")
+                    Text("Your session, timer, and task are saved locally by Sloopy. Downtime is controlled separately in iPhone Settings.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -122,29 +101,6 @@ struct FocusModeSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
-                }
-            }
-            .sheet(isPresented: $isPickerPresented) {
-                NavigationStack {
-                    FamilyActivityPicker(selection: $selection)
-                        .navigationTitle("Choose distractions")
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { isPickerPresented = false }
-                            }
-                        }
-                }
-            }
-            .onAppear {
-                selection = focusService.loadSelection()
-                if isModeActive {
-                    try? focusService.applySelection(selection)
-                }
-            }
-            .onChange(of: selection) { _, newSelection in
-                focusService.saveSelection(newSelection)
-                if isModeActive {
-                    try? focusService.applySelection(newSelection)
                 }
             }
         }
@@ -205,59 +161,42 @@ struct FocusModeSheet: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 20))
     }
 
-    private var selectionCard: some View {
+    private var downtimeGuideCard: some View {
         VStack(alignment: .leading, spacing: 11) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("DISTRACTION LIST")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(1)
-                        .foregroundStyle(.secondary)
-                    Text(selectionCount == 0
-                         ? "No apps or websites selected"
-                         : "\(selectionCount) selections saved")
-                        .font(.subheadline.weight(.semibold))
-                }
+            Label("iPhone Screen Time · Downtime", systemImage: "hourglass")
+                .font(.headline)
+                .foregroundStyle(accentColor)
 
-                Spacer()
-
-                Image(systemName: "hand.raised.slash.fill")
-                    .font(.title3)
-                    .foregroundStyle(accentColor)
-            }
-
-            Button {
-                requestAccessAndChoose()
-            } label: {
-                Label("Choose apps & websites", systemImage: "square.grid.2x2")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
-            .disabled(isWorking)
-
-            Text("Use the Apple picker to select the social apps, categories, or sites you want Sloopy to pause.")
+            Text("Sloopy can’t change Apple’s Downtime settings. Set this once in iPhone Settings and iOS will enforce your schedule.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider()
+
+            Label("Open Settings → Screen Time", systemImage: "1.circle.fill")
+                .font(.subheadline.weight(.medium))
+
+            Label("Tap Downtime → Scheduled, then choose your days and hours", systemImage: "2.circle.fill")
+                .font(.subheadline.weight(.medium))
+
+            Label("Turn on Block at Downtime", systemImage: "3.circle.fill")
+                .font(.subheadline.weight(.medium))
+
+            Label("Set essential apps under Always Allowed", systemImage: "4.circle.fill")
+                .font(.subheadline.weight(.medium))
         }
         .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(.background, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private var startButton: some View {
-        Button {
-            Task { await startSession() }
-        } label: {
-            HStack {
-                if isWorking {
-                    ProgressView().tint(.white)
-                } else {
-                    Image(systemName: "play.fill")
-                }
-                Text(mode == .work ? "Start Work Mode" : "Start Get Ready")
-            }
+        Button(action: startSession) {
+            Label(
+                mode == .work ? "Start Work Mode" : "Start Get Ready",
+                systemImage: "play.fill"
+            )
             .font(.subheadline.weight(.bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
@@ -265,29 +204,28 @@ struct FocusModeSheet: View {
             .background(accentColor, in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
-        .disabled(
-            isWorking
-            || selectionCount == 0
-            || (mode == .work && workGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        )
-        .opacity(
-            (selectionCount == 0
-             || (mode == .work && workGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
-                ? 0.55 : 1
-        )
+        .disabled(mode == .work && workGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity(mode == .work && workGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
     }
 
     @ViewBuilder
     private var activeControls: some View {
         if mode == .work {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Work Mode is active. Selected distractions are paused.", systemImage: "checkmark.shield.fill")
+                Label("Work Mode is active. Stay with your main task.", systemImage: "checkmark.circle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.green)
 
-                Button {
-                    finishSession()
-                } label: {
+                if workStartedAt > 0 {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let elapsed = max(0, Int(context.date.timeIntervalSince1970 - workStartedAt))
+                        Text("In progress · \(elapsed / 60) min \(elapsed % 60) sec")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Button(action: finishSession) {
                     Label("Finish task & end Work Mode", systemImage: "checkmark.circle.fill")
                         .font(.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity)
@@ -299,14 +237,16 @@ struct FocusModeSheet: View {
                 .opacity(workGoalComplete ? 1 : 0.5)
 
                 if !workGoalComplete {
-                    Text("Tick “I have completed this task” above to restore the selected apps.")
+                    Text("Tick “I have completed this task” above when your task is done.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding(15)
+            .background(.background, in: RoundedRectangle(cornerRadius: 20))
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Get Ready focus is active.", systemImage: "checkmark.shield.fill")
+                Label("Get Ready session is active.", systemImage: "checkmark.circle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.green)
 
@@ -319,9 +259,7 @@ struct FocusModeSheet: View {
                     }
                 }
 
-                Button {
-                    finishSession()
-                } label: {
+                Button(action: finishSession) {
                     Label("Finish Get Ready", systemImage: "checkmark.circle.fill")
                         .font(.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity)
@@ -330,54 +268,26 @@ struct FocusModeSheet: View {
                 }
                 .buttonStyle(.plain)
             }
+            .padding(15)
+            .background(.background, in: RoundedRectangle(cornerRadius: 20))
         }
     }
 
-    private func requestAccessAndChoose() {
-        Task {
-            isWorking = true
-            errorMessage = nil
-            defer { isWorking = false }
-
-            do {
-                try await focusService.requestAuthorization()
-                isPickerPresented = true
-            } catch {
-                errorMessage = "Family Controls permission is needed. This app’s Family Controls capability must be approved by Apple; a child account may also need a parent or guardian to approve the system request."
-            }
-        }
-    }
-
-    @MainActor
-    private func startSession() async {
-        guard selectionCount > 0 else { return }
+    private func startSession() {
         guard !anotherModeIsActive else { return }
 
-        isWorking = true
-        errorMessage = nil
-        defer { isWorking = false }
-
-        do {
-            try await focusService.requestAuthorization()
-            try focusService.applySelection(selection)
-
-            activeMode = mode.rawValue
-            if mode == .getReady {
-                routineStartedAt = Date().timeIntervalSince1970
-            } else {
-                workStartedAt = Date().timeIntervalSince1970
-                workGoalComplete = false
-            }
-
-            dismiss()
-        } catch {
-            errorMessage = "Sloopy couldn’t activate app limits. Check that Family Controls is enabled for this app and approved for your Apple developer team."
+        if mode == .work {
+            guard !workGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            workStartedAt = Date().timeIntervalSince1970
+            workGoalComplete = false
+        } else {
+            routineStartedAt = Date().timeIntervalSince1970
         }
+
+        activeMode = mode.rawValue
     }
 
     private func finishSession() {
-        focusService.clearShields()
-
         if mode == .getReady, routineStartedAt > 0 {
             lastRoutineMinutes = max(
                 1,
