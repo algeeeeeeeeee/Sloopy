@@ -57,9 +57,7 @@ extension Color {
 }
 
 struct SettingsScreen: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? SloopyPalette.color(for: accent, customHex: accentHex) }
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
 
     @AppStorage("sloopy-profile-name") private var profileName = "My profile"
     @AppStorage("sloopy-avatar") private var avatar = "🌿"
@@ -542,9 +540,7 @@ private extension View {
 
 
 private struct QuickLaunchEditorSheet: View {
-    @Environment(\.tint) private var tint
-
-    private var accentColor: Color { tint ?? .blue }
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
 
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
