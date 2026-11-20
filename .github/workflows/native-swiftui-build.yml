@@ -1,0 +1,46 @@
+name: Sloopy Native SwiftUI Build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Native/**'
+      - '.github/workflows/native-swiftui-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile SwiftUI App
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: Native
+        run: xcodegen generate --spec project.yml
+
+      - name: List project schemes
+        run: xcodebuild -list -project Native/Sloopy.xcodeproj
+
+      - name: Compile for iOS Simulator
+        run: |
+          xcodebuild \
+            -project Native/Sloopy.xcodeproj \
+            -scheme Sloopy \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/SloopyNativeDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
