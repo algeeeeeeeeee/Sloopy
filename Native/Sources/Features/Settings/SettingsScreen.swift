@@ -81,6 +81,9 @@ struct SettingsScreen: View {
     private var customShortcutURL = "https://mwlt.pages.dev/"
 
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedAppIconName = ""
+    @State private var isChangingAppIcon = false
+    @State private var appIconError: String?
     @State private var isQuickAppEditorPresented = false
 
     private let avatars = ["🌿", "🌙", "☁️", "✨", "🌼", "🌊"]
@@ -109,6 +112,7 @@ struct SettingsScreen: View {
                 heading
                 profileSection
                 appearanceSection
+                appIconSection
                 quickLaunchSection
                 weatherSection
                 customShortcutSection
@@ -121,6 +125,9 @@ struct SettingsScreen: View {
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
             Task { await loadPhoto(item) }
+        }
+        .onAppear {
+            selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
         }
         .sheet(isPresented: $isQuickAppEditorPresented) {
             QuickLaunchEditorSheet { app in
@@ -290,6 +297,97 @@ struct SettingsScreen: View {
             }
         }
         .settingsCard()
+    }
+
+    private var appIconSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            sectionHeading("App icon", subtitle: "Choose the icon shown on your iPhone Home Screen.")
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+                spacing: 12
+            ) {
+                ForEach(SloopyAppIconOption.all) { option in
+                    Button {
+                        changeAppIcon(to: option)
+                    } label: {
+                        VStack(spacing: 8) {
+                            Image(option.previewAssetName)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 66, height: 66)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                            Text(option.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.primary)
+
+                            if selectedAppIconName == (option.alternateName ?? "") {
+                                Label("Selected", systemImage: "checkmark.circle.fill")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
+                            } else {
+                                Text(" ")
+                                    .font(.system(size: 9))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            selectedAppIconName == (option.alternateName ?? "")
+                                ? Color.accentColor.opacity(0.09)
+                                : Color(uiColor: .secondarySystemGroupedBackground),
+                            in: RoundedRectangle(cornerRadius: 17)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 17)
+                                .stroke(
+                                    selectedAppIconName == (option.alternateName ?? "")
+                                        ? Color.accentColor
+                                        : Color.primary.opacity(0.05),
+                                    lineWidth: selectedAppIconName == (option.alternateName ?? "") ? 1.5 : 1
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isChangingAppIcon)
+                }
+            }
+
+            if let appIconError {
+                Text(appIconError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            Text("iOS may show a system confirmation when the icon changes. More icon styles can be added in future app updates.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .settingsCard()
+    }
+
+    private func changeAppIcon(to option: SloopyAppIconOption) {
+        guard UIApplication.shared.supportsAlternateIcons else {
+            appIconError = "Alternate app icons are not available in this build."
+            return
+        }
+
+        let targetName = option.alternateName ?? ""
+        guard targetName != selectedAppIconName else { return }
+
+        isChangingAppIcon = true
+        appIconError = nil
+        UIApplication.shared.setAlternateIconName(option.alternateName) { error in
+            DispatchQueue.main.async {
+                isChangingAppIcon = false
+                if let error {
+                    appIconError = error.localizedDescription
+                } else {
+                    selectedAppIconName = targetName
+                }
+            }
+        }
     }
 
     private var quickLaunchSection: some View {
@@ -538,4 +636,45 @@ private struct QuickLaunchEditorSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
+}
+
+
+private struct SloopyAppIconOption: Identifiable {
+    let id: String
+    let title: String
+    let previewAssetName: String
+    let alternateName: String?
+
+    static let all = [
+        SloopyAppIconOption(
+            id: "original",
+            title: "Original",
+            previewAssetName: "SloopyIconPreview-Original",
+            alternateName: nil
+        ),
+        SloopyAppIconOption(
+            id: "ocean",
+            title: "Ocean",
+            previewAssetName: "SloopyIconPreview-Ocean",
+            alternateName: "AppIcon-Ocean"
+        ),
+        SloopyAppIconOption(
+            id: "sage",
+            title: "Sage",
+            previewAssetName: "SloopyIconPreview-Sage",
+            alternateName: "AppIcon-Sage"
+        ),
+        SloopyAppIconOption(
+            id: "lavender",
+            title: "Lavender",
+            previewAssetName: "SloopyIconPreview-Lavender",
+            alternateName: "AppIcon-Lavender"
+        ),
+        SloopyAppIconOption(
+            id: "peach",
+            title: "Peach",
+            previewAssetName: "SloopyIconPreview-Peach",
+            alternateName: "AppIcon-Peach"
+        )
+    ]
 }
