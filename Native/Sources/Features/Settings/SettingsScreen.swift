@@ -647,34 +647,34 @@ private struct SloopyAppIconOption: Identifiable {
 
     static let all = [
         SloopyAppIconOption(
-            id: "original",
-            title: "Original",
-            previewAssetName: "SloopyIconPreview-Original",
+            id: "cctv",
+            title: "CCTV",
+            previewAssetName: "SloopyIconPreview-CCTV",
             alternateName: nil
         ),
         SloopyAppIconOption(
-            id: "ocean",
-            title: "Ocean",
-            previewAssetName: "SloopyIconPreview-Ocean",
-            alternateName: "AppIcon-Ocean"
+            id: "crystal",
+            title: "Crystal",
+            previewAssetName: "SloopyIconPreview-Crystal",
+            alternateName: "AppIcon-Crystal"
         ),
         SloopyAppIconOption(
-            id: "sage",
-            title: "Sage",
-            previewAssetName: "SloopyIconPreview-Sage",
-            alternateName: "AppIcon-Sage"
+            id: "eye",
+            title: "Eye",
+            previewAssetName: "SloopyIconPreview-Eye",
+            alternateName: "AppIcon-Eye"
         ),
         SloopyAppIconOption(
-            id: "lavender",
-            title: "Lavender",
-            previewAssetName: "SloopyIconPreview-Lavender",
-            alternateName: "AppIcon-Lavender"
+            id: "cat",
+            title: "Cat",
+            previewAssetName: "SloopyIconPreview-Cat",
+            alternateName: "AppIcon-Cat"
         ),
         SloopyAppIconOption(
-            id: "peach",
-            title: "Peach",
-            previewAssetName: "SloopyIconPreview-Peach",
-            alternateName: "AppIcon-Peach"
+            id: "cube",
+            title: "Cube",
+            previewAssetName: "SloopyIconPreview-Cube",
+            alternateName: "AppIcon-Cube"
         )
     ]
 }
