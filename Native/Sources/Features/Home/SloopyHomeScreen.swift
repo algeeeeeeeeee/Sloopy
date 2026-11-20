@@ -3,6 +3,10 @@ import PhotosUI
 import UIKit
 
 struct SloopyHomeScreen: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @AppStorage("sloopy-profile-name")
     private var profileName = "My profile"
 
@@ -102,7 +106,7 @@ struct SloopyHomeScreen: View {
                 HStack(spacing: 11) {
                     profileAvatar
                         .frame(width: 45, height: 45)
-                        .background(Color.accentColor.opacity(0.12))
+                        .background(accentColor.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 15))
 
                     VStack(alignment: .leading, spacing: 3) {
@@ -158,7 +162,7 @@ struct SloopyHomeScreen: View {
             } label: {
                 Image(systemName: "square.grid.2x2")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
                     .frame(width: 43, height: 43)
                     .background(.background, in: Circle())
             }
@@ -217,7 +221,7 @@ struct SloopyHomeScreen: View {
         .background(
             LinearGradient(
                 colors: [
-                    Color.accentColor.opacity(0.14),
+                    accentColor.opacity(0.14),
                     Color(uiColor: .secondarySystemGroupedBackground)
                 ],
                 startPoint: .topLeading,
@@ -243,15 +247,15 @@ struct SloopyHomeScreen: View {
 
                 Text("20 MIN TARGET")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
             }
 
             HStack(spacing: 12) {
                 Image(systemName: "clock")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
                     .frame(width: 45, height: 45)
-                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                    .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Get Ready")
@@ -279,7 +283,7 @@ struct SloopyHomeScreen: View {
                 .font(.subheadline.weight(.bold))
                 .frame(maxWidth: .infinity)
                 .padding(12)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
+                .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
             }
             .buttonStyle(.plain)
 
@@ -311,9 +315,9 @@ struct SloopyHomeScreen: View {
             HStack(spacing: 13) {
                 Image(systemName: "briefcase.fill")
                     .font(.system(size: 22))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(accentColor)
                     .frame(width: 45, height: 45)
-                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                    .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 7) {
@@ -362,7 +366,7 @@ struct SloopyHomeScreen: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(.accentColor)
+            .tint(accentColor)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -376,7 +380,7 @@ struct SloopyHomeScreen: View {
                 .font(.subheadline.bold())
                 .frame(maxWidth: .infinity)
                 .padding(12)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
+                .background(accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
             }
             .buttonStyle(.plain)
 
