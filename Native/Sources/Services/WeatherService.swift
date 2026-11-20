@@ -209,6 +209,10 @@ enum WeatherService {
 }
 
 struct NativeWeatherCard: View {
+    @Environment(\.tint) private var tint
+
+    private var accentColor: Color { tint ?? .blue }
+
     @AppStorage("sloopy-native-weather-location")
     private var city = "Pontianak"
 
@@ -256,7 +260,7 @@ struct NativeWeatherCard: View {
                 } else if let weather {
                     Image(systemName: weather.symbol)
                         .font(.system(size: 32))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(accentColor)
                         .frame(width: 48, height: 48)
 
                     VStack(alignment: .leading, spacing: 3) {
@@ -281,7 +285,7 @@ struct NativeWeatherCard: View {
                 } else {
                     Image(systemName: "cloud.sun.fill")
                         .font(.system(size: 32))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(accentColor)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(city).font(.headline)
@@ -311,7 +315,7 @@ struct NativeWeatherCard: View {
                                         .foregroundStyle(.secondary)
                                     Image(systemName: hour.symbol)
                                         .font(.system(size: 18))
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(accentColor)
                                     Text("\(Int(hour.temperature.rounded()))°")
                                         .font(.subheadline.weight(.bold))
                                     Label("\(hour.precipitationProbability)%", systemImage: "drop.fill")
@@ -339,7 +343,7 @@ struct NativeWeatherCard: View {
                                     .foregroundStyle(.secondary)
                                 Image(systemName: day.symbol)
                                     .font(.system(size: 17))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(accentColor)
                                 Text("\(Int(day.high.rounded()))°")
                                     .font(.caption.weight(.bold))
                                 Text("\(Int(day.low.rounded()))°")
