@@ -227,7 +227,7 @@ struct SloopyHomeScreen: View {
                 .font(.headline)
 
             Picker("Select camera", selection: $selectedCamera) {
-                ForEach(cameras.indices, id: \\.self) { index in
+                ForEach(cameras.indices, id: \.self) { index in
                     Text(cameras[index].name).tag(cameras[index].id)
                 }
             }
