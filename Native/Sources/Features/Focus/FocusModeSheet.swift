@@ -29,8 +29,9 @@ enum SloopyFocusMode: String, Identifiable {
 }
 
 struct FocusModeSheet: View {
-    @Environment(\.tint) private var tint
-    private var accentColor: Color { tint ?? .blue }
+    @AppStorage("sloopy-native-accent") private var accent = "blue"
+    @AppStorage("sloopy-native-accent-hex") private var accentHex = "#7898AA"
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
 
     @Environment(\.dismiss) private var dismiss
 
