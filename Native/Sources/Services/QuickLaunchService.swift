@@ -3,13 +3,17 @@ import UIKit
 @MainActor
 enum QuickLaunchService {
     static func open(_ app: SloopyQuickApp) {
-        guard let url = URL(string: app.deepLink),
-              let fallback = URL(string: app.fallbackURL) else { return }
+        guard let url = URL(string: app.deepLink) else { return }
+        UIApplication.shared.open(url)
+    }
 
-        UIApplication.shared.open(url) { success in
-            if !success {
-                UIApplication.shared.open(fallback)
-            }
-        }
+    static func openWebShortcut(_ rawURL: String) {
+        guard
+            let url = URL(string: rawURL),
+            let scheme = url.scheme?.lowercased(),
+            scheme == "https" || scheme == "http"
+        else { return }
+
+        UIApplication.shared.open(url)
     }
 }

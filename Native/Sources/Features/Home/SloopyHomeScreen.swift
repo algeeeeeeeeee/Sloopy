@@ -11,6 +11,12 @@ struct SloopyHomeScreen: View {
     @AppStorage("sloopy-native-favorites")
     private var favoritesRaw = "whatsapp,instagram,youtube,spotify"
 
+    @AppStorage("sloopy-native-custom-shortcut-name")
+    private var customShortcutName = "MWLT"
+
+    @AppStorage("sloopy-native-custom-shortcut-url")
+    private var customShortcutURL = "https://mwlt.pages.dev/"
+
     private var favoriteApps: [SloopyQuickApp] {
         let ids = Set(favoritesRaw.split(separator: ",").map(String.init))
         return SloopyQuickApp.all.filter { ids.contains($0.id) }
@@ -78,6 +84,17 @@ struct SloopyHomeScreen: View {
                         QuickLaunchService.open(app)
                     } label: {
                         Label(app.name, systemImage: app.symbol)
+                    }
+                }
+                if !customShortcutURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Divider()
+                    Button {
+                        QuickLaunchService.openWebShortcut(customShortcutURL)
+                    } label: {
+                        Label(
+                            customShortcutName.isEmpty ? "Custom shortcut" : customShortcutName,
+                            systemImage: "globe"
+                        )
                     }
                 }
             } label: {
@@ -185,8 +202,8 @@ struct SloopyHomeScreen: View {
                 }
             } label: {
                 Label(
-                    routineStartedAt == nil ? "Start routine" : "Finish routine",
-                    systemImage: routineStartedAt == nil ? "play.fill" : "checkmark"
+                    routineStartedAt == 0 ? "Start routine" : "Finish routine",
+                    systemImage: routineStartedAt == 0 ? "play.fill" : "checkmark"
                 )
                 .font(.subheadline.weight(.bold))
                 .frame(maxWidth: .infinity)
@@ -258,7 +275,7 @@ struct SloopyHomeScreen: View {
                     .foregroundStyle(.secondary)
 
                 if let camera = cameras.first(where: { $0.id == selectedCamera }),
-                   let url = URL(string: "https://www.youtube.com/watch?v=\\(camera.id)") {
+                   let url = URL(string: "https://www.youtube.com/watch?v=\(camera.id)") {
                     Link("Open in YouTube", destination: url)
                         .font(.caption.bold())
                 }
