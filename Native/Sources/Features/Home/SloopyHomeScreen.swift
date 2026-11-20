@@ -16,7 +16,16 @@ struct SloopyHomeScreen: View {
         return SloopyQuickApp.all.filter { ids.contains($0.id) }
     }
 
-    @State private var routineStartedAt: Date?
+    @AppStorage("sloopy-native-routine-start")
+    private var routineStartedAt = 0.0
+
+    @AppStorage("sloopy-native-routine-last-minutes")
+    private var lastRoutineMinutes = 0
+
+    @AppStorage("sloopy-native-selected-camera")
+    private var selectedCamera = "phSVFy5vl1g"
+
+    @State private var cameraExpanded = false
 
     private let cameras: [(name: String, id: String)] = [
         ("CCTV 01", "phSVFy5vl1g"),
@@ -128,11 +137,7 @@ struct SloopyHomeScreen: View {
     }
 
     private var weatherCard: some View {
-        HomeSectionCard(
-            title: "LOCAL WEATHER",
-            subtitle: "Pontianak · Forecast integration next",
-            symbol: "cloud.sun.fill"
-        )
+        NativeWeatherCard()
     }
 
     private var routineCard: some View {
@@ -169,7 +174,15 @@ struct SloopyHomeScreen: View {
             }
 
             Button {
-                routineStartedAt = routineStartedAt == nil ? .now : nil
+                if routineStartedAt == 0 {
+                    routineStartedAt = Date().timeIntervalSince1970
+                } else {
+                    lastRoutineMinutes = max(
+                        1,
+                        Int((Date().timeIntervalSince1970 - routineStartedAt) / 60)
+                    )
+                    routineStartedAt = 0
+                }
             } label: {
                 Label(
                     routineStartedAt == nil ? "Start routine" : "Finish routine",
@@ -181,43 +194,75 @@ struct SloopyHomeScreen: View {
                 .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
             }
             .buttonStyle(.plain)
+
+            if routineStartedAt > 0 {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let elapsed = max(0, Int(context.date.timeIntervalSince1970 - routineStartedAt))
+                    Text("In progress · \(elapsed / 60) min \(elapsed % 60) sec")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                Text(lastRoutineMinutes > 0
+                     ? "Last session · \(lastRoutineMinutes) minutes"
+                     : "A gentle nudge, not a strict timer.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 22))
     }
 
     private var cameraCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 13) {
             Text("ROAD CAMERAS")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
 
-            Text("Live camera sources")
+            Text("Live camera preview")
                 .font(.headline)
 
-            ForEach(cameras, id: \.id) { camera in
-                Link(
-                    destination: URL(string: "https://www.youtube.com/watch?v=\(camera.id)")!
-                ) {
-                    HStack {
-                        Image(systemName: "video.fill")
-                            .foregroundStyle(Color.accentColor)
-                        Text(camera.name)
-                            .font(.subheadline.weight(.medium))
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(11)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 13))
+            Picker("Select camera", selection: $selectedCamera) {
+                ForEach(cameras.indices, id: \\.self) { index in
+                    Text(cameras[index].name).tag(cameras[index].id)
                 }
-                .buttonStyle(.plain)
             }
+            .pickerStyle(.menu)
+            .tint(.accentColor)
 
-            Text("Camera playback will be integrated and tested separately.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    cameraExpanded.toggle()
+                }
+            } label: {
+                Label(
+                    cameraExpanded ? "Hide live preview" : "Load live stream",
+                    systemImage: cameraExpanded ? "eye.slash" : "play.fill"
+                )
+                .font(.subheadline.bold())
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 13))
+            }
+            .buttonStyle(.plain)
+
+            if cameraExpanded {
+                SloopyCCTVPlayer(cameraID: selectedCamera)
+
+                Text("Playback depends on the stream owner's YouTube embed permissions.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let camera = cameras.first(where: { $0.id == selectedCamera }),
+                   let url = URL(string: "https://www.youtube.com/watch?v=\\(camera.id)") {
+                    Link("Open in YouTube", destination: url)
+                        .font(.caption.bold())
+                }
+            }
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 22))
