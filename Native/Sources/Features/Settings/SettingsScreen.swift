@@ -540,6 +540,9 @@ private extension View {
 
 
 private struct QuickLaunchEditorSheet: View {
+    @AppStorage("sloopy-native-accent") private var accent = "blue"
+    @AppStorage("sloopy-native-accent-hex") private var accentHex = "#7898AA"
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
     private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
 
     @Environment(\.dismiss) private var dismiss
