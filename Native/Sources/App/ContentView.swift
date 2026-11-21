@@ -35,6 +35,18 @@ struct ContentView: View {
     private var isNavigationCollapsed = true
 
     var body: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--sloopy-icon-smoke-test") {
+            IconChangeSmokeTestView()
+        } else {
+            appContent
+        }
+        #else
+        appContent
+        #endif
+    }
+
+    private var appContent: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
