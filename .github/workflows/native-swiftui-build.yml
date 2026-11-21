@@ -109,6 +109,11 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
+      - name: Stage Eevee-style alternate app icons
+        run: |
+          APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
+          bash Native/Scripts/StageAlternateAppIcons.sh "$APP_PATH"
+
       - name: Verify app resources and alternate icons
         run: |
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
@@ -117,9 +122,13 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
           for ICON in CCTVIcon CrystalIcon EyeIcon CatIcon CubeIcon; do
             grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
+            test -f "$APP_PATH/${ICON}@2x.png"
+            test -f "$APP_PATH/${ICON}@3x.png"
+            /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:CFBundleIconFiles:0" "$APP_PATH/Info.plist" | grep -Fx "$ICON"
+            /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:UIPrerenderedIcon" "$APP_PATH/Info.plist" | grep -Fx false
           done
           grep -q "primaryAppIconID = \"$SLOOPY_PRIMARY_ICON_ID\"" Native/Sources/App/SloopyBuildConfiguration.swift
-          echo "Verified Assets.car, selected primary icon ($SLOOPY_PRIMARY_ICON_ID), and all five alternates."
+          echo "Verified selected primary icon ($SLOOPY_PRIMARY_ICON_ID), loose alternate PNGs, and Eevee-style Info.plist entries."
 
       - name: Package unsigned IPA
         run: |

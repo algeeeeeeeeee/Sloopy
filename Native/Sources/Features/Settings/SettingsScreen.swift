@@ -87,6 +87,7 @@ struct SettingsScreen: View {
     private var customShortcutURL = "https://mwlt.pages.dev/"
 
     @State private var selectedPhoto: PhotosPickerItem?
+    @AppStorage("sloopy-native-selected-app-icon") private var storedSelectedAppIconID = ""
     @State private var selectedAppIconID = SloopyBuildConfiguration.primaryAppIconID
     @State private var isChangingAppIcon = false
     @State private var appIconError: String?
@@ -133,8 +134,13 @@ struct SettingsScreen: View {
             Task { await loadPhoto(item) }
         }
         .onAppear {
-            let activeAlternate = UIApplication.shared.alternateIconName
-            selectedAppIconID = SloopyAppIconOption.all.first(where: { $0.alternateName == activeAlternate })?.id ?? SloopyBuildConfiguration.primaryAppIconID
+            if SloopyAppIconOption.all.contains(where: { $0.id == storedSelectedAppIconID }) {
+                selectedAppIconID = storedSelectedAppIconID
+            } else {
+                let activeAlternate = UIApplication.shared.alternateIconName
+                selectedAppIconID = SloopyAppIconOption.all.first(where: { $0.alternateName == activeAlternate })?.id ?? SloopyBuildConfiguration.primaryAppIconID
+                storedSelectedAppIconID = selectedAppIconID
+            }
         }
         .sheet(isPresented: $isQuickAppEditorPresented) {
             QuickLaunchEditorSheet { app in
@@ -367,7 +373,7 @@ struct SettingsScreen: View {
                     .foregroundStyle(.red)
             }
 
-            Text("Some installation methods may block live icon changes. For TrollStore, choose the primary icon in the iOS build workflow; changing it later requires a new IPA.")
+            Text("Your selected icon is saved and remembered when you reopen Sloopy.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -382,20 +388,22 @@ struct SettingsScreen: View {
 
         guard selectedAppIconID != option.id else { return }
 
+        let previousIconID = selectedAppIconID
         isChangingAppIcon = true
         appIconError = nil
+
         UIApplication.shared.setAlternateIconName(option.alternateName) { error in
             DispatchQueue.main.async {
                 isChangingAppIcon = false
+
                 if let error {
+                    selectedAppIconID = previousIconID
+                    storedSelectedAppIconID = previousIconID
                     let nsError = error as NSError
-                    var message = "\(error.localizedDescription) (\(nsError.domain), code \(nsError.code))"
-                    if nsError.code == -54 {
-                        message += "\nFor TrollStore, choose the desired primary icon in the iOS build workflow and install that IPA."
-                    }
-                    appIconError = message
+                    appIconError = "\(error.localizedDescription) (\(nsError.domain), code \(nsError.code))"
                 } else {
                     selectedAppIconID = option.id
+                    storedSelectedAppIconID = option.id
                 }
             }
         }
