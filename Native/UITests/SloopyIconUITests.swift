@@ -9,34 +9,67 @@ final class SloopyIconUITests: XCTestCase {
 
         let support = app.staticTexts["icon-test-support"]
         XCTAssertTrue(support.waitForExistence(timeout: 15), "Icon smoke-test screen did not appear.")
-        XCTAssertEqual(support.label, "supportsAlternateIcons=true", "The app reports that alternate icons are unavailable in this simulator.")
+        XCTAssertEqual(
+            support.label,
+            "supportsAlternateIcons=true",
+            "The app reports that alternate icons are unavailable in this simulator."
+        )
 
         let result = app.staticTexts["icon-test-result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 10))
 
         app.buttons["icon-test-change"].tap()
-        dismissSystemIconAlertIfPresent()
-        XCTAssertTrue(result.waitForExistence(timeout: 30), "No result was returned for the alternate icon request.")
+        handleSystemIconAlertIfPresent()
+        waitForRequestCompletion(result, timeout: 30)
+
         let changeResult = result.label
         print("ALTERNATE_ICON_CHANGE_RESULT: \(changeResult)")
-        XCTAssertEqual(changeResult, "SUCCESS: CrystalIcon", "Alternate icon change did not succeed.")
+        XCTAssertEqual(
+            changeResult,
+            "SUCCESS: CrystalIcon",
+            "Alternate icon change did not succeed. Callback result: \(changeResult)"
+        )
 
         app.buttons["icon-test-reset"].tap()
-        dismissSystemIconAlertIfPresent()
-        let resetPredicate = NSPredicate(format: "label == %@", "SUCCESS: Primary")
-        expectation(for: resetPredicate, evaluatedWith: result)
-        waitForExpectations(timeout: 30)
-        print("ALTERNATE_ICON_RESTORE_RESULT: \(result.label)")
+        handleSystemIconAlertIfPresent()
+        waitForRequestCompletion(result, timeout: 30)
+
+        let restoreResult = result.label
+        print("ALTERNATE_ICON_RESTORE_RESULT: \(restoreResult)")
+        XCTAssertEqual(
+            restoreResult,
+            "SUCCESS: Primary",
+            "Restoring the primary icon did not succeed. Callback result: \(restoreResult)"
+        )
     }
 
     @MainActor
-    private func dismissSystemIconAlertIfPresent() {
+    private func waitForRequestCompletion(
+        _ result: XCUIElement,
+        timeout: TimeInterval
+    ) {
+        let completed = NSPredicate(
+            format: "label BEGINSWITH 'SUCCESS:' OR label BEGINSWITH 'ERROR:' OR label BEGINSWITH 'MISMATCH:'"
+        )
+        expectation(for: completed, evaluatedWith: result)
+        waitForExpectations(timeout: timeout)
+    }
+
+    @MainActor
+    private func handleSystemIconAlertIfPresent() {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let alert = springboard.alerts.firstMatch
-        if alert.waitForExistence(timeout: 2) {
-            let buttons = alert.buttons
-            if buttons.count > 0 {
-                buttons.element(boundBy: 0).tap()
-            }
+        guard alert.waitForExistence(timeout: 8) else { return }
+
+        let changeButton = alert.buttons["Change"]
+        if changeButton.exists {
+            changeButton.tap()
+            return
+        }
+
+        let okButton = alert.buttons["OK"]
+        if okButton.exists {
+            okButton.tap()
         }
     }
 }
