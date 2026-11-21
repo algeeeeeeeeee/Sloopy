@@ -43,7 +43,8 @@ private func runSipsResize(from source: URL, to destination: URL) throws {
 
 let assetCatalog = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "Native/Resources/Assets.xcassets", isDirectory: true)
 let sourceDirectory = URL(fileURLWithPath: "Native/Resources/CustomAppIcons", isDirectory: true)
-let selectedPrimaryID = ProcessInfo.processInfo.environment["SLOOPY_PRIMARY_ICON_ID"]?.lowercased() ?? "cctv"
+let environmentPrimaryID = ProcessInfo.processInfo.environment["SLOOPY_PRIMARY_ICON_ID"]?.lowercased()
+let selectedPrimaryID = environmentPrimaryID.flatMap { $0.isEmpty ? nil : $0 } ?? "cctv"
 
 guard let primaryAsset = iconAssets.first(where: { $0.id == selectedPrimaryID }) else {
     throw NSError(domain: "SloopyIconGenerator", code: 11,

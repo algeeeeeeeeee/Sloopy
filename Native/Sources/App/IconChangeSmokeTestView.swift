@@ -55,5 +55,6 @@ struct IconChangeSmokeTestView: View {
                 }
             }
         }
-    }}
+    }
+}
 #endif

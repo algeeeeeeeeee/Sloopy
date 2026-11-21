@@ -34,14 +34,14 @@ jobs:
   build:
     name: Build iOS Simulator and Device
     runs-on: macos-26
+    env:
+      SLOOPY_PRIMARY_ICON_ID: ${{ github.event.inputs.primary_icon || 'cctv' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
       - name: Generate app icon assets
-        env:
-          SLOOPY_PRIMARY_ICON_ID: ${{ github.event.inputs.primary_icon }}
         run: swift Native/Scripts/GenerateAppIcons.swift Native/Resources/Assets.xcassets
 
       - name: Show Xcode version

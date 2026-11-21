@@ -665,7 +665,7 @@ private struct SloopyAppIconOption: Identifiable {
             id: "cctv",
             title: "CCTV",
             previewAssetName: "SloopyIconPreview-CCTV",
-            alternateName: nil
+            alternateName: "CCTVIcon"
         ),
         SloopyAppIconOption(
             id: "crystal",
