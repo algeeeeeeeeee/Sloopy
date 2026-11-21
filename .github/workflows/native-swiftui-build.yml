@@ -136,12 +136,27 @@ jobs:
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
           /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
+          case "$SLOOPY_PRIMARY_ICON_ID" in
+            cctv) PRIMARY_ICON_NAME="CCTVIcon" ;;
+            crystal) PRIMARY_ICON_NAME="CrystalIcon" ;;
+            eye) PRIMARY_ICON_NAME="EyeIcon" ;;
+            cat) PRIMARY_ICON_NAME="CatIcon" ;;
+            cube) PRIMARY_ICON_NAME="CubeIcon" ;;
+            *) echo "Unknown primary icon: $SLOOPY_PRIMARY_ICON_ID"; exit 1 ;;
+          esac
           for ICON in CCTVIcon CrystalIcon EyeIcon CatIcon CubeIcon; do
-            grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
             test -f "$APP_PATH/${ICON}@2x.png"
             test -f "$APP_PATH/${ICON}@3x.png"
-            /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:CFBundleIconFiles:0" "$APP_PATH/Info.plist" | grep -Fx "$ICON"
-            /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:UIPrerenderedIcon" "$APP_PATH/Info.plist" | grep -Fx false
+            if [[ "$ICON" == "$PRIMARY_ICON_NAME" ]]; then
+              if /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}" "$APP_PATH/Info.plist" >/dev/null 2>&1; then
+                echo "Primary icon $ICON must not also be registered as an alternate."
+                exit 1
+              fi
+            else
+              grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
+              /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:CFBundleIconFiles:0" "$APP_PATH/Info.plist" | grep -Fx "$ICON"
+              /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:UIPrerenderedIcon" "$APP_PATH/Info.plist" | grep -Fx false
+            fi
           done
           grep -q "primaryAppIconID = \"$SLOOPY_PRIMARY_ICON_ID\"" Native/Sources/App/SloopyBuildConfiguration.swift
           echo "Verified selected primary icon ($SLOOPY_PRIMARY_ICON_ID), loose alternate PNGs, and Eevee-style Info.plist entries."
