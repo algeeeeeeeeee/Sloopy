@@ -1,0 +1,97 @@
+name: Build Sloopy IconFix Port
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "Jailbreak/IconFixPort/**"
+      - ".github/workflows/build-iconfix-port.yml"
+  pull_request:
+    paths:
+      - "Jailbreak/IconFixPort/**"
+      - ".github/workflows/build-iconfix-port.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TOOLCHAIN_TAG: main-update_3-eabca92
+  SDK_NAME: iPhoneOS16.5.sdk
+  THEOS: ${{ github.workspace }}/theos
+
+jobs:
+  build:
+    name: Build rootless LaunchServices tweak
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential fakeroot rsync curl perl git libxml2 libtinfo6 \
+            dpkg-dev xz-utils bzip2 gzip
+          sudo update-alternatives --set fakeroot /usr/bin/fakeroot-sysv || true
+
+      - name: Cache Theos
+        id: cache-theos
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.THEOS }}
+          key: theos-${{ env.TOOLCHAIN_TAG }}-${{ env.SDK_NAME }}-sloopy-iconfix-v2
+
+      - name: Set up Theos
+        if: steps.cache-theos.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+          curl -fsSL \
+            "https://github.com/L1ghtmann/llvm-project/releases/download/${TOOLCHAIN_TAG}/iOSToolchain-x86_64.tar.xz" \
+            | tar -xJf - -C "$THEOS/toolchain/"
+          test -x "$THEOS/toolchain/linux/iphone/bin/clang"
+          "$THEOS/toolchain/linux/iphone/bin/clang" --version
+
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/theos/sdks.git /tmp/sdks
+          git -C /tmp/sdks sparse-checkout set "$SDK_NAME"
+          mv "/tmp/sdks/$SDK_NAME" "$THEOS/sdks/"
+          rm -rf /tmp/sdks
+
+      - name: Build rootless package
+        working-directory: Jailbreak/IconFixPort
+        run: make package FINALPACKAGE=1
+
+      - name: Verify package and arm64e slice
+        working-directory: Jailbreak/IconFixPort
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          debs=(packages/*.deb)
+          test "${#debs[@]}" -gt 0
+          DEB="${debs[0]}"
+
+          dpkg-deb -c "$DEB" > /tmp/sloopy-iconfix-files.txt
+          cat /tmp/sloopy-iconfix-files.txt
+          grep -q 'SloopyIconFix.dylib' /tmp/sloopy-iconfix-files.txt
+          grep -q 'SloopyIconFixLSD.dylib' /tmp/sloopy-iconfix-files.txt
+          grep -q 'SloopyIconFix.plist' /tmp/sloopy-iconfix-files.txt
+          grep -q 'SloopyIconFixLSD.plist' /tmp/sloopy-iconfix-files.txt
+
+          dpkg-deb -x "$DEB" /tmp/sloopy-iconfix-extract
+          file /tmp/sloopy-iconfix-extract/var/jb/Library/MobileSubstrate/DynamicLibraries/SloopyIconFix.dylib | tee /tmp/sloopy-iconfix-sb-arch.txt
+          file /tmp/sloopy-iconfix-extract/var/jb/Library/MobileSubstrate/DynamicLibraries/SloopyIconFixLSD.dylib | tee /tmp/sloopy-iconfix-lsd-arch.txt
+          grep -q 'arm64e' /tmp/sloopy-iconfix-sb-arch.txt
+          grep -q 'arm64e' /tmp/sloopy-iconfix-lsd-arch.txt
+          echo "Verified both rootless dylibs and arm64e slices."
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sloopy-IconFix-LSD-deb
+          path: Jailbreak/IconFixPort/packages/*.deb
+          if-no-files-found: error
+          retention-days: 7
