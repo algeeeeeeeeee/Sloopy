@@ -47,13 +47,27 @@ build() {
 }
 
 icon_names() {
+    local primary_name
+    case "${SLOOPY_PRIMARY_ICON_ID:-cctv}" in
+        cctv) primary_name="CCTVIcon" ;;
+        crystal) primary_name="CrystalIcon" ;;
+        eye) primary_name="EyeIcon" ;;
+        cat) primary_name="CatIcon" ;;
+        cube) primary_name="CubeIcon" ;;
+        *) echo "[alt-icons] unknown SLOOPY_PRIMARY_ICON_ID: ${SLOOPY_PRIMARY_ICON_ID}" >&2; return 1 ;;
+    esac
+
     shopt -s nullglob
     local pngs=("$ICON_DIR"/*@2x.png)
     shopt -u nullglob
     for f in "${pngs[@]}"; do
-        local base
+        local base name
         base="$(basename "$f")"
-        [[ "$base" == *"~ipad"* ]] || printf '%s\n' "${base%@2x.png}"
+        [[ "$base" == *"~ipad"* ]] && continue
+        name="${base%@2x.png}"
+        # The build-time AppIcon is EeveeSpotify's equivalent of its primary entry.
+        [[ "$name" == "$primary_name" ]] && continue
+        printf '%s\n' "$name"
     done
 }
 
