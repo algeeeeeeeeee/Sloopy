@@ -106,37 +106,16 @@ jobs:
           done
           echo "Verified Assets.car and all four alternate app icons."
 
-      - name: Package unsigned IPA with TrollStore-compatible executable identity
+      - name: Package unsigned IPA
         run: |
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -d "$APP_PATH"
-
-          # TrollStore Lite 2.1.1 signs the main Mach-O by path without passing
-          # ldid's -I override. ldid therefore uses the executable filename as
-          # the CodeDirectory identifier. Make that identifier equal the real
-          # CFBundleIdentifier so LaunchServices sees the caller as its own app.
-          BUNDLE_ID="$("/usr/libexec/PlistBuddy" -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist")"
-          EXECUTABLE_NAME="$("/usr/libexec/PlistBuddy" -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")"
-          test "$BUNDLE_ID" = "com.sloopy.daily"
-          test "$EXECUTABLE_NAME" = "Sloopy"
-          test -f "$APP_PATH/$EXECUTABLE_NAME"
-          mv "$APP_PATH/$EXECUTABLE_NAME" "$APP_PATH/$BUNDLE_ID"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $BUNDLE_ID" "$APP_PATH/Info.plist"
-          test -f "$APP_PATH/$BUNDLE_ID"
-          test "$("/usr/libexec/PlistBuddy" -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")" = "$BUNDLE_ID"
-          echo "Prepared executable identity: $BUNDLE_ID"
-
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           ditto "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/Sloopy.app"
           ditto -c -k --sequesterRsrc --keepParent \
             "$RUNNER_TEMP/ipa/Payload" \
             "$RUNNER_TEMP/Sloopy-unsigned.ipa"
-
-          unzip -p "$RUNNER_TEMP/Sloopy-unsigned.ipa" Payload/Sloopy.app/Info.plist > "$RUNNER_TEMP/packaged-Info.plist"
-          test "$( /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$RUNNER_TEMP/packaged-Info.plist" )" = "$BUNDLE_ID"
-          test "$( /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$RUNNER_TEMP/packaged-Info.plist" )" = "$BUNDLE_ID"
-          unzip -l "$RUNNER_TEMP/Sloopy-unsigned.ipa" | grep -F "Payload/Sloopy.app/$BUNDLE_ID"
-          echo "Verified packaged bundle ID and executable name match."
+          unzip -l "$RUNNER_TEMP/Sloopy-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
 
       - name: Upload iPhone build
         uses: actions/upload-artifact@v4
