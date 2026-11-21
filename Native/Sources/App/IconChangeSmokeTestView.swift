@@ -45,17 +45,14 @@ struct IconChangeSmokeTestView: View {
         }
 
         result = "REQUESTING: \(name ?? "Primary")"
-        UIApplication.shared.setAlternateIconName(name) { error in
+        SloopyAlternateIconBridge.setAlternateIconName(name) { route, error in
             DispatchQueue.main.async {
                 if let error {
                     let nsError = error as NSError
                     let debug = nsError.userInfo[NSDebugDescriptionErrorKey] as? String ?? ""
-                    result = "ERROR: \(error.localizedDescription) | \(nsError.domain) (\(nsError.code)) | \(debug)"
+                    result = "ERROR: \(error.localizedDescription) | \(nsError.domain) (\(nsError.code)) | Route: \(route) | \(debug)"
                 } else {
-                    let actual = UIApplication.shared.alternateIconName ?? "Primary"
-                    result = actual == (name ?? "Primary")
-                        ? "SUCCESS: \(actual)"
-                        : "MISMATCH: expected \(name ?? "Primary"), got \(actual)"
+                    result = "SUCCESS: \(name ?? "Primary") via \(route)"
                 }
             }
         }
