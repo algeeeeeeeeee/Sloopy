@@ -24,7 +24,7 @@ final class SloopyIconUITests: XCTestCase {
 
         let changeResult = result.label
         print("ALTERNATE_ICON_CHANGE_RESULT: \(changeResult)")
-        XCTAssertEqual(
+        XCTAssertTrue(
             changeResult.hasPrefix("SUCCESS: CrystalIcon"),
             "Alternate icon change did not succeed. Callback result: \(changeResult)"
         )
@@ -35,7 +35,7 @@ final class SloopyIconUITests: XCTestCase {
 
         let restoreResult = result.label
         print("ALTERNATE_ICON_RESTORE_RESULT: \(restoreResult)")
-        XCTAssertEqual(
+        XCTAssertTrue(
             restoreResult.hasPrefix("SUCCESS: Primary"),
             "Restoring the primary icon did not succeed. Callback result: \(restoreResult)"
         )
