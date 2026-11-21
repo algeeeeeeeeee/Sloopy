@@ -384,7 +384,7 @@ struct SettingsScreen: View {
 
         isChangingAppIcon = true
         appIconError = nil
-        UIApplication.shared.setAlternateIconName(option.alternateName) { error in
+        SloopyAlternateIconBridge.setAlternateIconName(option.alternateName) { route, error in
             DispatchQueue.main.async {
                 isChangingAppIcon = false
                 if let error {
@@ -398,6 +398,7 @@ struct SettingsScreen: View {
                     var details = [
                         error.localizedDescription,
                         "\(nsError.domain) (code \(nsError.code))",
+                        "Route: \(route)",
                         "Target: \(targetName.isEmpty ? "Primary" : targetName)",
                         "Bundle: \(Bundle.main.bundleIdentifier ?? "(unknown)")",
                         "supportsAlternateIcons: \(UIApplication.shared.supportsAlternateIcons)",
@@ -414,6 +415,13 @@ struct SettingsScreen: View {
                     if let line = info["_LSLine"] {
                         details.append("LS line: \(line)")
                     }
+                    if let proxyDomain = info["SloopyLSBundleProxyErrorDomain"] as? String,
+                       let proxyCode = info["SloopyLSBundleProxyErrorCode"] {
+                        details.append("LSBundleProxy attempt: \(proxyDomain) (code \(proxyCode))")
+                        if let description = info["SloopyLSBundleProxyErrorDescription"] as? String {
+                            details.append("LSBundleProxy detail: \(description)")
+                        }
+                    }
                     if let underlyingError {
                         details.append(
                             "Underlying: \(underlyingError.domain) (code \(underlyingError.code))"
@@ -425,7 +433,7 @@ struct SettingsScreen: View {
 
                     appIconError = details.joined(separator: "\n")
                 } else {
-                    selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
+                    selectedAppIconName = targetName
                 }
             }
         }
