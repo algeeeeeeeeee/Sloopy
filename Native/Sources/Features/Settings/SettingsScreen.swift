@@ -389,16 +389,40 @@ struct SettingsScreen: View {
                 isChangingAppIcon = false
                 if let error {
                     let nsError = error as NSError
-                    let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError
+                    let info = nsError.userInfo
+                    let underlyingError = info[NSUnderlyingErrorKey] as? NSError
+                    let iconDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
+                    let alternateIcons = iconDictionary?["CFBundleAlternateIcons"] as? [String: Any]
+                    let registeredNames = alternateIcons?.keys.sorted().joined(separator: ", ") ?? "(none)"
+
                     var details = [
                         error.localizedDescription,
-                        "\(nsError.domain) (code \(nsError.code))"
+                        "\(nsError.domain) (code \(nsError.code))",
+                        "Target: \(targetName.isEmpty ? "Primary" : targetName)",
+                        "Bundle: \(Bundle.main.bundleIdentifier ?? "(unknown)")",
+                        "supportsAlternateIcons: \(UIApplication.shared.supportsAlternateIcons)",
+                        "Current icon: \(UIApplication.shared.alternateIconName ?? "Primary")",
+                        "Registered icons: \(registeredNames)"
                     ]
+
+                    if let debugDescription = info[NSDebugDescriptionErrorKey] as? String {
+                        details.append("Debug: \(debugDescription)")
+                    }
+                    if let function = info["_LSFunction"] as? String {
+                        details.append("LS function: \(function)")
+                    }
+                    if let line = info["_LSLine"] {
+                        details.append("LS line: \(line)")
+                    }
                     if let underlyingError {
                         details.append(
                             "Underlying: \(underlyingError.domain) (code \(underlyingError.code))"
                         )
+                        if let debug = underlyingError.userInfo[NSDebugDescriptionErrorKey] as? String {
+                            details.append("Underlying debug: \(debug)")
+                        }
                     }
+
                     appIconError = details.joined(separator: "\n")
                 } else {
                     selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
