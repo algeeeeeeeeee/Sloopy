@@ -54,6 +54,33 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Run alternate app icon UI test on iOS Simulator
+        run: |
+          SIMULATOR_ID="$(python3 - <<'PY'
+          import json
+          import subprocess
+
+          devices = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "-j"],
+              text=True
+          ))
+          for runtime, entries in devices["devices"].items():
+              if "iOS" not in runtime:
+                  continue
+              for device in entries:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit(0)
+          raise SystemExit("No available iPhone simulator was found.")
+          PY
+          )"
+          xcodebuild test \
+            -project Native/Sloopy.xcodeproj \
+            -scheme Sloopy \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/SloopyIconUITests" \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Compile for iPhone Device
         run: |
           xcodebuild \
