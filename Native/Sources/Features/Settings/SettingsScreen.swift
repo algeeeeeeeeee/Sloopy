@@ -677,25 +677,25 @@ private struct SloopyAppIconOption: Identifiable {
             id: "crystal",
             title: "Crystal",
             previewAssetName: "SloopyIconPreview-Crystal",
-            alternateName: "AppIconCrystal"
+            alternateName: "CrystalIcon"
         ),
         SloopyAppIconOption(
             id: "eye",
             title: "Eye",
             previewAssetName: "SloopyIconPreview-Eye",
-            alternateName: "AppIconEye"
+            alternateName: "EyeIcon"
         ),
         SloopyAppIconOption(
             id: "cat",
             title: "Cat",
             previewAssetName: "SloopyIconPreview-Cat",
-            alternateName: "AppIconCat"
+            alternateName: "CatIcon"
         ),
         SloopyAppIconOption(
             id: "cube",
             title: "Cube",
             previewAssetName: "SloopyIconPreview-Cube",
-            alternateName: "AppIconCube"
+            alternateName: "CubeIcon"
         )
     ]
 }
