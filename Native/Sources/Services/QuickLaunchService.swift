@@ -18,7 +18,11 @@ struct SloopyCustomQuickApp: Identifiable, Codable, Equatable {
 enum QuickLaunchService {
     static func open(_ app: SloopyQuickApp) {
         guard let url = URL(string: app.deepLink) else { return }
-        UIApplication.shared.open(url)
+        UIApplication.shared.open(url, options: [:]) { opened in
+            if !opened, let fallback = URL(string: app.fallbackURL) {
+                UIApplication.shared.open(fallback)
+            }
+        }
     }
 
     static func open(_ app: SloopyCustomQuickApp) {

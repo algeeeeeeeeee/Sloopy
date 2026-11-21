@@ -3,6 +3,8 @@ import PhotosUI
 import UIKit
 
 struct ProfileEditorSheet: View {
+    @Environment(\.sloopyAccentColor) private var accentColor
+
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("sloopy-profile-name")
@@ -74,7 +76,7 @@ struct ProfileEditorSheet: View {
                                     .frame(height: 48)
                                     .background(
                                         avatar == choice && avatarImage.isEmpty
-                                            ? Color.accentColor.opacity(0.16)
+                                            ? accentColor.opacity(0.16)
                                             : Color(uiColor: .secondarySystemGroupedBackground),
                                         in: RoundedRectangle(cornerRadius: 13)
                                     )
@@ -109,7 +111,7 @@ struct ProfileEditorSheet: View {
             Text(avatar)
                 .font(.system(size: 38))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.accentColor.opacity(0.13))
+                .background(accentColor.opacity(0.13))
         }
     }
 

@@ -13,21 +13,20 @@ on:
     paths:
       - 'Native/**'
       - '.github/workflows/native-swiftui-build.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build iOS Simulator and Device
+    name: Build Sloopy for iOS
     runs-on: macos-26
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Generate app icon assets
+      - name: Generate Crystal primary app icon
         run: swift Native/Scripts/GenerateAppIcons.swift Native/Resources/Assets.xcassets
 
       - name: Show Xcode version
@@ -68,16 +67,18 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Verify app resources and alternate icons
+      - name: Verify Crystal primary icon and app bundle
         run: |
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
-          for ICON in AppIcon-Crystal AppIcon-Eye AppIcon-Cat AppIcon-Cube; do
-            grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
-          done
-          echo "Verified Assets.car and all four alternate app icons."
+          grep -q 'primaryAppIconID = "crystal"' Native/Sources/App/SloopyBuildConfiguration.swift
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundlePrimaryIcon" "$APP_PATH/Info.plist"
+          if /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" >/dev/null 2>&1; then
+            echo "Unexpected alternate app icon metadata was found."
+            exit 1
+          fi
+          echo "Verified Crystal primary icon and no alternate icon entries."
 
       - name: Package unsigned IPA
         run: |
@@ -87,13 +88,13 @@ jobs:
           ditto "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/Sloopy.app"
           ditto -c -k --sequesterRsrc --keepParent \
             "$RUNNER_TEMP/ipa/Payload" \
-            "$RUNNER_TEMP/Sloopy-unsigned.ipa"
-          unzip -l "$RUNNER_TEMP/Sloopy-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
+            "$RUNNER_TEMP/Sloopy-Crystal-unsigned.ipa"
+          unzip -l "$RUNNER_TEMP/Sloopy-Crystal-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
 
-      - name: Upload iPhone build
+      - name: Upload Crystal IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Sloopy-unsigned-IPA
-          path: ${{ runner.temp }}/Sloopy-unsigned.ipa
+          name: Sloopy-Crystal-unsigned-IPA
+          path: ${{ runner.temp }}/Sloopy-Crystal-unsigned.ipa
           if-no-files-found: error
           retention-days: 7

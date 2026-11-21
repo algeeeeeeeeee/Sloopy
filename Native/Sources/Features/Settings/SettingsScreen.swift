@@ -12,6 +12,10 @@ struct SloopyQuickApp: Identifiable {
 
     static let all: [SloopyQuickApp] = [
         .init(id: "whatsapp", name: "WhatsApp", symbol: "message.fill", deepLink: "whatsapp://", fallbackURL: "https://www.whatsapp.com/"),
+        .init(id: "line", name: "LINE", symbol: "message.circle.fill", deepLink: "line://", fallbackURL: "https://line.me/"),
+        .init(id: "x", name: "X", symbol: "at", deepLink: "twitter://", fallbackURL: "https://x.com/"),
+        .init(id: "facebook", name: "Facebook", symbol: "person.2.fill", deepLink: "fb://", fallbackURL: "https://www.facebook.com/"),
+        .init(id: "tiktok", name: "TikTok", symbol: "music.note", deepLink: "snssdk1233://", fallbackURL: "https://www.tiktok.com/"),
         .init(id: "instagram", name: "Instagram", symbol: "camera.fill", deepLink: "instagram://app", fallbackURL: "https://www.instagram.com/"),
         .init(id: "youtube", name: "YouTube", symbol: "play.rectangle.fill", deepLink: "youtube://", fallbackURL: "https://www.youtube.com/"),
         .init(id: "spotify", name: "Spotify", symbol: "waveform", deepLink: "spotify://", fallbackURL: "https://open.spotify.com/")
@@ -57,6 +61,8 @@ extension Color {
 }
 
 struct SettingsScreen: View {
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
+
     @AppStorage("sloopy-profile-name") private var profileName = "My profile"
     @AppStorage("sloopy-avatar") private var avatar = "🌿"
     @AppStorage("sloopy-native-avatar-image") private var avatarImage = ""
@@ -81,9 +87,6 @@ struct SettingsScreen: View {
     private var customShortcutURL = "https://mwlt.pages.dev/"
 
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var selectedAppIconName = ""
-    @State private var isChangingAppIcon = false
-    @State private var appIconError: String?
     @State private var isQuickAppEditorPresented = false
 
     private let avatars = ["🌿", "🌙", "☁️", "✨", "🌼", "🌊"]
@@ -112,7 +115,6 @@ struct SettingsScreen: View {
                 heading
                 profileSection
                 appearanceSection
-                appIconSection
                 quickLaunchSection
                 weatherSection
                 customShortcutSection
@@ -125,9 +127,6 @@ struct SettingsScreen: View {
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
             Task { await loadPhoto(item) }
-        }
-        .onAppear {
-            selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
         }
         .sheet(isPresented: $isQuickAppEditorPresented) {
             QuickLaunchEditorSheet { app in
@@ -191,7 +190,7 @@ struct SettingsScreen: View {
                             .frame(height: 48)
                             .background(
                                 avatar == choice && avatarImage.isEmpty
-                                    ? Color.accentColor.opacity(0.16)
+                                    ? accentColor.opacity(0.16)
                                     : Color(uiColor: .secondarySystemGroupedBackground),
                                 in: RoundedRectangle(cornerRadius: 13)
                             )
@@ -231,7 +230,7 @@ struct SettingsScreen: View {
             Text(avatar)
                 .font(.system(size: 33))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 19))
+                .background(accentColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 19))
         }
     }
 
@@ -299,100 +298,9 @@ struct SettingsScreen: View {
         .settingsCard()
     }
 
-    private var appIconSection: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            sectionHeading("App icon", subtitle: "Choose the icon shown on your iPhone Home Screen.")
-
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
-                spacing: 12
-            ) {
-                ForEach(SloopyAppIconOption.all) { option in
-                    Button {
-                        changeAppIcon(to: option)
-                    } label: {
-                        VStack(spacing: 8) {
-                            Image(option.previewAssetName)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 66, height: 66)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                            Text(option.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.primary)
-
-                            if selectedAppIconName == (option.alternateName ?? "") {
-                                Label("Selected", systemImage: "checkmark.circle.fill")
-                                    .font(.system(size: 9, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                            } else {
-                                Text(" ")
-                                    .font(.system(size: 9))
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            selectedAppIconName == (option.alternateName ?? "")
-                                ? Color.accentColor.opacity(0.09)
-                                : Color(uiColor: .secondarySystemGroupedBackground),
-                            in: RoundedRectangle(cornerRadius: 17)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 17)
-                                .stroke(
-                                    selectedAppIconName == (option.alternateName ?? "")
-                                        ? Color.accentColor
-                                        : Color.primary.opacity(0.05),
-                                    lineWidth: selectedAppIconName == (option.alternateName ?? "") ? 1.5 : 1
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isChangingAppIcon)
-                }
-            }
-
-            if let appIconError {
-                Text(appIconError)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
-            Text("iOS may show a system confirmation when the icon changes. More icon styles can be added in future app updates.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .settingsCard()
-    }
-
-    private func changeAppIcon(to option: SloopyAppIconOption) {
-        guard UIApplication.shared.supportsAlternateIcons else {
-            appIconError = "Alternate app icons are not available in this build."
-            return
-        }
-
-        let targetName = option.alternateName ?? ""
-        guard targetName != selectedAppIconName else { return }
-
-        isChangingAppIcon = true
-        appIconError = nil
-        UIApplication.shared.setAlternateIconName(option.alternateName) { error in
-            DispatchQueue.main.async {
-                isChangingAppIcon = false
-                if let error {
-                    appIconError = error.localizedDescription
-                } else {
-                    selectedAppIconName = targetName
-                }
-            }
-        }
-    }
-
     private var quickLaunchSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeading("Quick Launch", subtitle: "Choose built-in apps or add your own shortcuts.")
+            sectionHeading("Quick Launch", subtitle: "Select supported apps or add a custom shortcut.")
 
             ForEach(SloopyQuickApp.all) { app in
                 Toggle(isOn: Binding(
@@ -410,7 +318,7 @@ struct SettingsScreen: View {
                     Label(app.name, systemImage: app.symbol)
                         .font(.subheadline.weight(.medium))
                 }
-                .tint(.accentColor)
+                .tint(accentColor)
             }
 
             if !customQuickApps.isEmpty {
@@ -453,7 +361,7 @@ struct SettingsScreen: View {
             }
             .buttonStyle(.plain)
 
-            Text("You can add an app using its URL scheme, or add a website with an https:// address. iOS does not let apps list every installed app automatically.")
+            Text("Choose an app here to add it to your Home menu. iOS does not allow Sloopy to scan every installed app; if an app is unavailable, its website will open instead.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -538,6 +446,10 @@ private extension View {
 
 
 private struct QuickLaunchEditorSheet: View {
+    @AppStorage("sloopy-native-accent") private var accent = "blue"
+    @AppStorage("sloopy-native-accent-hex") private var accentHex = "#7898AA"
+    private var accentColor: Color { SloopyPalette.color(for: accent, customHex: accentHex) }
+
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var url = ""
@@ -587,18 +499,18 @@ private struct QuickLaunchEditorSheet: View {
                             } label: {
                                 Image(systemName: option)
                                     .font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(symbol == option ? Color.accentColor : Color.secondary)
+                                    .foregroundStyle(symbol == option ? accentColor : Color.secondary)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 42)
                                     .background(
                                         symbol == option
-                                            ? Color.accentColor.opacity(0.13)
+                                            ? accentColor.opacity(0.13)
                                             : Color(uiColor: .secondarySystemGroupedBackground),
                                         in: RoundedRectangle(cornerRadius: 11)
                                     )
                                     .overlay {
                                         RoundedRectangle(cornerRadius: 11)
-                                            .stroke(symbol == option ? Color.accentColor : Color.clear, lineWidth: 1.3)
+                                            .stroke(symbol == option ? accentColor : Color.clear, lineWidth: 1.3)
                                     }
                             }
                             .buttonStyle(.plain)
@@ -636,45 +548,4 @@ private struct QuickLaunchEditorSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
-}
-
-
-private struct SloopyAppIconOption: Identifiable {
-    let id: String
-    let title: String
-    let previewAssetName: String
-    let alternateName: String?
-
-    static let all = [
-        SloopyAppIconOption(
-            id: "cctv",
-            title: "CCTV",
-            previewAssetName: "SloopyIconPreview-CCTV",
-            alternateName: nil
-        ),
-        SloopyAppIconOption(
-            id: "crystal",
-            title: "Crystal",
-            previewAssetName: "SloopyIconPreview-Crystal",
-            alternateName: "AppIcon-Crystal"
-        ),
-        SloopyAppIconOption(
-            id: "eye",
-            title: "Eye",
-            previewAssetName: "SloopyIconPreview-Eye",
-            alternateName: "AppIcon-Eye"
-        ),
-        SloopyAppIconOption(
-            id: "cat",
-            title: "Cat",
-            previewAssetName: "SloopyIconPreview-Cat",
-            alternateName: "AppIcon-Cat"
-        ),
-        SloopyAppIconOption(
-            id: "cube",
-            title: "Cube",
-            previewAssetName: "SloopyIconPreview-Cube",
-            alternateName: "AppIcon-Cube"
-        )
-    ]
 }
