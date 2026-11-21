@@ -25,20 +25,4 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_CFBundleShortVersionString: "1.0.0"
         INFOPLIST_KEY_CFBundleVersion: "1"
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "CCTVIcon CrystalIcon EyeIcon CatIcon CubeIcon"
-    scheme:
-      testTargets:
-        - SloopyIconUITests
-
-  SloopyIconUITests:
-    type: bundle.ui-testing
-    platform: iOS
-    sources:
-      - path: UITests
-    dependencies:
-      - target: Sloopy
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sloopy.daily.iconuitests
-        GENERATE_INFOPLIST_FILE: YES
+        ASSET_CATALOG_COMPILER_APPICON_NAME: AppIcon
