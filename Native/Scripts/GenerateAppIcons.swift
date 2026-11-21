@@ -14,22 +14,22 @@ private let iconAssets = [
     ),
     IconAsset(
         sourceFileName: "IMG_1659.PNG",
-        setName: "AppIconCrystal",
+        setName: "CrystalIcon",
         previewName: "SloopyIconPreview-Crystal"
     ),
     IconAsset(
         sourceFileName: "IMG_1745.PNG",
-        setName: "AppIconEye",
+        setName: "EyeIcon",
         previewName: "SloopyIconPreview-Eye"
     ),
     IconAsset(
         sourceFileName: "IMG_1835.PNG",
-        setName: "AppIconCat",
+        setName: "CatIcon",
         previewName: "SloopyIconPreview-Cat"
     ),
     IconAsset(
         sourceFileName: "IMG_1878.PNG",
-        setName: "AppIconCube",
+        setName: "CubeIcon",
         previewName: "SloopyIconPreview-Cube"
     )
 ]
