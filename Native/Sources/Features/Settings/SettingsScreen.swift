@@ -89,6 +89,7 @@ struct SettingsScreen: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @AppStorage("sloopy-native-selected-app-icon") private var storedSelectedAppIconID = ""
     @State private var selectedAppIconID = SloopyBuildConfiguration.primaryAppIconID
+    @State private var appIconOptions: [SloopyAppIconOption] = []
     @State private var isChangingAppIcon = false
     @State private var appIconError: String?
     @State private var isQuickAppEditorPresented = false
@@ -133,15 +134,7 @@ struct SettingsScreen: View {
             guard let item else { return }
             Task { await loadPhoto(item) }
         }
-        .onAppear {
-            if SloopyAppIconOption.all.contains(where: { $0.id == storedSelectedAppIconID }) {
-                selectedAppIconID = storedSelectedAppIconID
-            } else {
-                let activeAlternate = UIApplication.shared.alternateIconName
-                selectedAppIconID = SloopyAppIconOption.all.first(where: { $0.alternateName == activeAlternate })?.id ?? SloopyBuildConfiguration.primaryAppIconID
-                storedSelectedAppIconID = selectedAppIconID
-            }
-        }
+        .onAppear(perform: loadAppIcons)
         .sheet(isPresented: $isQuickAppEditorPresented) {
             QuickLaunchEditorSheet { app in
                 saveCustomQuickApps(customQuickApps + [app])
@@ -320,7 +313,7 @@ struct SettingsScreen: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 12
             ) {
-                ForEach(SloopyAppIconOption.all) { option in
+                ForEach(appIconOptions) { option in
                     Button {
                         changeAppIcon(to: option)
                     } label: {
@@ -380,31 +373,87 @@ struct SettingsScreen: View {
         .settingsCard()
     }
 
+    // Load alternate icon entries directly from the finished bundle, as EeveeSpotify does.
+    // The filename passed to UIKit comes from CFBundleIconFiles[0], not from a hard-coded label.
+    private func loadAppIcons() {
+        let bundleIcons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
+        let alternates = bundleIcons?["CFBundleAlternateIcons"] as? [String: Any] ?? [:]
+
+        let definitions: [(key: String, id: String, title: String, preview: String)] = [
+            ("CCTVIcon", "cctv", "CCTV", "SloopyIconPreview-CCTV"),
+            ("CrystalIcon", "crystal", "Crystal", "SloopyIconPreview-Crystal"),
+            ("EyeIcon", "eye", "Eye", "SloopyIconPreview-Eye"),
+            ("CatIcon", "cat", "Cat", "SloopyIconPreview-Cat"),
+            ("CubeIcon", "cube", "Cube", "SloopyIconPreview-Cube")
+        ]
+
+        appIconOptions = definitions.compactMap { definition in
+            guard let iconInfo = alternates[definition.key] as? [String: Any] else { return nil }
+            let files = iconInfo["CFBundleIconFiles"] as? [String] ?? [definition.key]
+            return SloopyAppIconOption(
+                id: definition.id,
+                title: definition.title,
+                previewAssetName: definition.preview,
+                plistKey: definition.key,
+                iconFiles: files,
+                alternateName: files.first ?? definition.key
+            )
+        }
+
+        guard !appIconOptions.isEmpty else {
+            appIconError = "No alternate icons were found in CFBundleIcons."
+            NSLog("[Sloopy][AppIcon] CFBundleAlternateIcons is missing or empty.")
+            return
+        }
+
+        // Like EeveeSpotify, prefer the saved choice because alternateIconName
+        // can return nil in resigned or TrollStore-installed builds.
+        if appIconOptions.contains(where: { $0.id == storedSelectedAppIconID }) {
+            selectedAppIconID = storedSelectedAppIconID
+        } else if let activeName = UIApplication.shared.alternateIconName,
+                  let activeOption = appIconOptions.first(where: {
+                      $0.plistKey == activeName || $0.alternateName == activeName
+                  }) {
+            selectedAppIconID = activeOption.id
+            storedSelectedAppIconID = activeOption.id
+        } else {
+            selectedAppIconID = SloopyBuildConfiguration.primaryAppIconID
+            storedSelectedAppIconID = selectedAppIconID
+        }
+
+        NSLog("[Sloopy][AppIcon] Loaded %lu alternate icon(s); supportsAlternateIcons=%@",
+              appIconOptions.count, UIApplication.shared.supportsAlternateIcons ? "YES" : "NO")
+    }
+
     private func changeAppIcon(to option: SloopyAppIconOption) {
         guard UIApplication.shared.supportsAlternateIcons else {
             appIconError = "Alternate app icons are not available in this build."
             return
         }
-
-        guard selectedAppIconID != option.id else { return }
+        guard !isChangingAppIcon else { return }
 
         let previousIconID = selectedAppIconID
         isChangingAppIcon = true
         appIconError = nil
 
+        // Match EeveeSpotify: optimistically save the selected key before invoking UIKit.
+        selectedAppIconID = option.id
+        storedSelectedAppIconID = option.id
+
+        NSLog("[Sloopy][AppIcon] setAlternateIconName(%@), plistKey=%@, iconFiles=%@",
+              option.alternateName, option.plistKey, option.iconFiles)
+
         UIApplication.shared.setAlternateIconName(option.alternateName) { error in
             DispatchQueue.main.async {
                 isChangingAppIcon = false
 
-                if let error {
-                    selectedAppIconID = previousIconID
-                    storedSelectedAppIconID = previousIconID
-                    let nsError = error as NSError
-                    appIconError = "\(error.localizedDescription) (\(nsError.domain), code \(nsError.code))"
-                } else {
-                    selectedAppIconID = option.id
-                    storedSelectedAppIconID = option.id
-                }
+                guard let error else { return }
+                let nsError = error as NSError
+                NSLog("[Sloopy][AppIcon] setAlternateIconName failed: %@ (%@, %ld)",
+                      error.localizedDescription, nsError.domain, nsError.code)
+                selectedAppIconID = previousIconID
+                storedSelectedAppIconID = previousIconID
+                appIconError = "\(error.localizedDescription) (\(nsError.domain), code \(nsError.code))"
             }
         }
     }
@@ -666,38 +715,7 @@ private struct SloopyAppIconOption: Identifiable {
     let id: String
     let title: String
     let previewAssetName: String
-    let alternateName: String?
-
-    static let all = [
-        SloopyAppIconOption(
-            id: "cctv",
-            title: "CCTV",
-            previewAssetName: "SloopyIconPreview-CCTV",
-            alternateName: "CCTVIcon"
-        ),
-        SloopyAppIconOption(
-            id: "crystal",
-            title: "Crystal",
-            previewAssetName: "SloopyIconPreview-Crystal",
-            alternateName: "CrystalIcon"
-        ),
-        SloopyAppIconOption(
-            id: "eye",
-            title: "Eye",
-            previewAssetName: "SloopyIconPreview-Eye",
-            alternateName: "EyeIcon"
-        ),
-        SloopyAppIconOption(
-            id: "cat",
-            title: "Cat",
-            previewAssetName: "SloopyIconPreview-Cat",
-            alternateName: "CatIcon"
-        ),
-        SloopyAppIconOption(
-            id: "cube",
-            title: "Cube",
-            previewAssetName: "SloopyIconPreview-Cube",
-            alternateName: "CubeIcon"
-        )
-    ]
+    let plistKey: String
+    let iconFiles: [String]
+    let alternateName: String
 }
