@@ -387,7 +387,25 @@ struct SettingsScreen: View {
             ("CubeIcon", "cube", "Cube", "SloopyIconPreview-Cube")
         ]
 
+        let primaryInfo = bundleIcons?["CFBundlePrimaryIcon"] as? [String: Any]
+        let primaryFiles = primaryInfo?["CFBundleIconFiles"] as? [String] ?? ["AppIcon60x60"]
+        let primaryID = SloopyBuildConfiguration.primaryAppIconID
+
         appIconOptions = definitions.compactMap { definition in
+            // EeveeSpotify models the app's primary icon separately and passes nil
+            // to UIKit when that icon is selected. Do not treat the build-time
+            // primary icon as one of its own alternates.
+            if definition.id == primaryID {
+                return SloopyAppIconOption(
+                    id: definition.id,
+                    title: definition.title,
+                    previewAssetName: definition.preview,
+                    plistKey: "__primary__",
+                    iconFiles: primaryFiles,
+                    alternateName: nil
+                )
+            }
+
             guard let iconInfo = alternates[definition.key] as? [String: Any] else { return nil }
             let files = iconInfo["CFBundleIconFiles"] as? [String] ?? [definition.key]
             return SloopyAppIconOption(
@@ -441,7 +459,7 @@ struct SettingsScreen: View {
         storedSelectedAppIconID = option.id
 
         NSLog("[Sloopy][AppIcon] setAlternateIconName(%@), plistKey=%@, iconFiles=%@",
-              option.alternateName, option.plistKey, option.iconFiles)
+              option.alternateName ?? "nil", option.plistKey, option.iconFiles)
 
         UIApplication.shared.setAlternateIconName(option.alternateName) { error in
             DispatchQueue.main.async {
@@ -717,5 +735,5 @@ private struct SloopyAppIconOption: Identifiable {
     let previewAssetName: String
     let plistKey: String
     let iconFiles: [String]
-    let alternateName: String
+    let alternateName: String?
 }
