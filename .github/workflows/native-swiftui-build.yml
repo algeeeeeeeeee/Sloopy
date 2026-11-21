@@ -13,35 +13,20 @@ on:
     paths:
       - 'Native/**'
       - '.github/workflows/native-swiftui-build.yml'
-  workflow_dispatch:
-    inputs:
-      primary_icon:
-        description: "Primary Home Screen icon for the TrollStore IPA"
-        required: true
-        type: choice
-        default: cctv
-        options:
-          - cctv
-          - crystal
-          - eye
-          - cat
-          - cube
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build iOS Simulator and Device
+    name: Build Sloopy for iOS
     runs-on: macos-26
-    env:
-      SLOOPY_PRIMARY_ICON_ID: ${{ github.event.inputs.primary_icon || 'cctv' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Generate app icon assets
+      - name: Generate Crystal primary app icon
         run: swift Native/Scripts/GenerateAppIcons.swift Native/Resources/Assets.xcassets
 
       - name: Show Xcode version
@@ -68,49 +53,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Build alternate app icon UI test app on iOS Simulator
-        run: |
-          SIMULATOR_ID="$(python3 - <<'PY'
-          import json
-          import subprocess
-
-          devices = json.loads(subprocess.check_output(
-              ["xcrun", "simctl", "list", "devices", "available", "-j"],
-              text=True
-          ))
-          for runtime, entries in devices["devices"].items():
-              if "iOS" not in runtime:
-                  continue
-              for device in entries:
-                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
-                      print(device["udid"])
-                      raise SystemExit(0)
-          raise SystemExit("No available iPhone simulator was found.")
-          PY
-          )"
-          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
-          xcodebuild build-for-testing \
-            -project Native/Sloopy.xcodeproj \
-            -scheme Sloopy \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
-            -derivedDataPath "$RUNNER_TEMP/SloopyIconUITests" \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Stage Eevee-style alternate icons in Simulator app
-        run: |
-          APP_PATH="$RUNNER_TEMP/SloopyIconUITests/Build/Products/Debug-iphonesimulator/Sloopy.app"
-          test -d "$APP_PATH"
-          bash Native/Scripts/StageAlternateAppIcons.sh "$APP_PATH"
-
-      - name: Run alternate app icon UI test on iOS Simulator
-        run: |
-          xcodebuild test-without-building \
-            -project Native/Sloopy.xcodeproj \
-            -scheme Sloopy \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
-            -derivedDataPath "$RUNNER_TEMP/SloopyIconUITests" \
-            CODE_SIGNING_ALLOWED=NO
-
       - name: Compile for iPhone Device
         run: |
           xcodebuild \
@@ -125,41 +67,18 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Stage Eevee-style alternate app icons
-        run: |
-          APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
-          bash Native/Scripts/StageAlternateAppIcons.sh "$APP_PATH"
-
-      - name: Verify app resources and alternate icons
+      - name: Verify Crystal primary icon and app bundle
         run: |
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
-          case "$SLOOPY_PRIMARY_ICON_ID" in
-            cctv) PRIMARY_ICON_NAME="CCTVIcon" ;;
-            crystal) PRIMARY_ICON_NAME="CrystalIcon" ;;
-            eye) PRIMARY_ICON_NAME="EyeIcon" ;;
-            cat) PRIMARY_ICON_NAME="CatIcon" ;;
-            cube) PRIMARY_ICON_NAME="CubeIcon" ;;
-            *) echo "Unknown primary icon: $SLOOPY_PRIMARY_ICON_ID"; exit 1 ;;
-          esac
-          for ICON in CCTVIcon CrystalIcon EyeIcon CatIcon CubeIcon; do
-            test -f "$APP_PATH/${ICON}@2x.png"
-            test -f "$APP_PATH/${ICON}@3x.png"
-            if [[ "$ICON" == "$PRIMARY_ICON_NAME" ]]; then
-              if /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}" "$APP_PATH/Info.plist" >/dev/null 2>&1; then
-                echo "Primary icon $ICON must not also be registered as an alternate."
-                exit 1
-              fi
-            else
-              grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
-              /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:CFBundleIconFiles:0" "$APP_PATH/Info.plist" | grep -Fx "$ICON"
-              /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:${ICON}:UIPrerenderedIcon" "$APP_PATH/Info.plist" | grep -Fx false
-            fi
-          done
-          grep -q "primaryAppIconID = \"$SLOOPY_PRIMARY_ICON_ID\"" Native/Sources/App/SloopyBuildConfiguration.swift
-          echo "Verified selected primary icon ($SLOOPY_PRIMARY_ICON_ID), loose alternate PNGs, and Eevee-style Info.plist entries."
+          grep -q 'primaryAppIconID = "crystal"' Native/Sources/App/SloopyBuildConfiguration.swift
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundlePrimaryIcon" "$APP_PATH/Info.plist"
+          if /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" >/dev/null 2>&1; then
+            echo "Unexpected alternate app icon metadata was found."
+            exit 1
+          fi
+          echo "Verified Crystal primary icon and no alternate icon entries."
 
       - name: Package unsigned IPA
         run: |
@@ -169,13 +88,13 @@ jobs:
           ditto "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/Sloopy.app"
           ditto -c -k --sequesterRsrc --keepParent \
             "$RUNNER_TEMP/ipa/Payload" \
-            "$RUNNER_TEMP/Sloopy-unsigned.ipa"
-          unzip -l "$RUNNER_TEMP/Sloopy-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
+            "$RUNNER_TEMP/Sloopy-Crystal-unsigned.ipa"
+          unzip -l "$RUNNER_TEMP/Sloopy-Crystal-unsigned.ipa" | grep 'Payload/Sloopy.app/Info.plist'
 
-      - name: Upload iPhone build
+      - name: Upload Crystal IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Sloopy-unsigned-IPA
-          path: ${{ runner.temp }}/Sloopy-unsigned.ipa
+          name: Sloopy-Crystal-unsigned-IPA
+          path: ${{ runner.temp }}/Sloopy-Crystal-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
