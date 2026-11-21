@@ -14,6 +14,18 @@ on:
       - 'Native/**'
       - '.github/workflows/native-swiftui-build.yml'
   workflow_dispatch:
+    inputs:
+      primary_icon:
+        description: "Primary Home Screen icon for the TrollStore IPA"
+        required: true
+        type: choice
+        default: cctv
+        options:
+          - cctv
+          - crystal
+          - eye
+          - cat
+          - cube
 
 permissions:
   contents: read
@@ -28,6 +40,8 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Generate app icon assets
+        env:
+          SLOOPY_PRIMARY_ICON_ID: ${{ github.event.inputs.primary_icon }}
         run: swift Native/Scripts/GenerateAppIcons.swift Native/Resources/Assets.xcassets
 
       - name: Show Xcode version
@@ -101,10 +115,11 @@ jobs:
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
           /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
-          for ICON in CrystalIcon EyeIcon CatIcon CubeIcon; do
+          for ICON in CCTVIcon CrystalIcon EyeIcon CatIcon CubeIcon; do
             grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
           done
-          echo "Verified Assets.car and all four alternate app icons."
+          grep -q "primaryAppIconID = \"$SLOOPY_PRIMARY_ICON_ID\"" Native/Sources/App/SloopyBuildConfiguration.swift
+          echo "Verified Assets.car, selected primary icon ($SLOOPY_PRIMARY_ICON_ID), and all five alternates."
 
       - name: Package unsigned IPA
         run: |

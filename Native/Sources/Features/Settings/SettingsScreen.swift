@@ -87,7 +87,7 @@ struct SettingsScreen: View {
     private var customShortcutURL = "https://mwlt.pages.dev/"
 
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var selectedAppIconName = ""
+    @State private var selectedAppIconID = SloopyBuildConfiguration.primaryAppIconID
     @State private var isChangingAppIcon = false
     @State private var appIconError: String?
     @State private var isQuickAppEditorPresented = false
@@ -133,7 +133,8 @@ struct SettingsScreen: View {
             Task { await loadPhoto(item) }
         }
         .onAppear {
-            selectedAppIconName = UIApplication.shared.alternateIconName ?? ""
+            let activeAlternate = UIApplication.shared.alternateIconName
+            selectedAppIconID = SloopyAppIconOption.all.first(where: { $0.alternateName == activeAlternate })?.id ?? SloopyBuildConfiguration.primaryAppIconID
         }
         .sheet(isPresented: $isQuickAppEditorPresented) {
             QuickLaunchEditorSheet { app in
@@ -328,7 +329,7 @@ struct SettingsScreen: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.primary)
 
-                            if selectedAppIconName == (option.alternateName ?? "") {
+                            if selectedAppIconID == option.id {
                                 Label("Selected", systemImage: "checkmark.circle.fill")
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(accentColor)
@@ -340,7 +341,7 @@ struct SettingsScreen: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
-                            selectedAppIconName == (option.alternateName ?? "")
+                            selectedAppIconID == option.id
                                 ? accentColor.opacity(0.09)
                                 : Color(uiColor: .secondarySystemGroupedBackground),
                             in: RoundedRectangle(cornerRadius: 17)
@@ -348,10 +349,10 @@ struct SettingsScreen: View {
                         .overlay {
                             RoundedRectangle(cornerRadius: 17)
                                 .stroke(
-                                    selectedAppIconName == (option.alternateName ?? "")
+                                    selectedAppIconID == option.id
                                         ? accentColor
                                         : Color.primary.opacity(0.05),
-                                    lineWidth: selectedAppIconName == (option.alternateName ?? "") ? 1.5 : 1
+                                    lineWidth: selectedAppIconID == option.id ? 1.5 : 1
                                 )
                         }
                     }
@@ -366,7 +367,7 @@ struct SettingsScreen: View {
                     .foregroundStyle(.red)
             }
 
-            Text("iOS may show a system confirmation when the icon changes. More icon styles can be added in future app updates.")
+            Text("Some installation methods may block live icon changes. For TrollStore, choose the primary icon in the iOS build workflow; changing it later requires a new IPA.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -379,61 +380,22 @@ struct SettingsScreen: View {
             return
         }
 
-        let targetName = option.alternateName ?? ""
-        guard targetName != selectedAppIconName else { return }
+        guard selectedAppIconID != option.id else { return }
 
         isChangingAppIcon = true
         appIconError = nil
-        SloopyAlternateIconBridge.setAlternateIconName(option.alternateName) { route, error in
+        UIApplication.shared.setAlternateIconName(option.alternateName) { error in
             DispatchQueue.main.async {
                 isChangingAppIcon = false
                 if let error {
                     let nsError = error as NSError
-                    let info = nsError.userInfo
-                    let underlyingError = info[NSUnderlyingErrorKey] as? NSError
-                    let iconDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
-                    let alternateIcons = iconDictionary?["CFBundleAlternateIcons"] as? [String: Any]
-                    let registeredNames = alternateIcons?.keys.sorted().joined(separator: ", ") ?? "(none)"
-
-                    var details = [
-                        error.localizedDescription,
-                        "\(nsError.domain) (code \(nsError.code))",
-                        "Route: \(route)",
-                        "Target: \(targetName.isEmpty ? "Primary" : targetName)",
-                        "Bundle: \(Bundle.main.bundleIdentifier ?? "(unknown)")",
-                        "supportsAlternateIcons: \(UIApplication.shared.supportsAlternateIcons)",
-                        "Current icon: \(UIApplication.shared.alternateIconName ?? "Primary")",
-                        "Registered icons: \(registeredNames)"
-                    ]
-
-                    if let debugDescription = info[NSDebugDescriptionErrorKey] as? String {
-                        details.append("Debug: \(debugDescription)")
+                    var message = "\(error.localizedDescription) (\(nsError.domain), code \(nsError.code))"
+                    if nsError.code == -54 {
+                        message += "\nFor TrollStore, choose the desired primary icon in the iOS build workflow and install that IPA."
                     }
-                    if let function = info["_LSFunction"] as? String {
-                        details.append("LS function: \(function)")
-                    }
-                    if let line = info["_LSLine"] {
-                        details.append("LS line: \(line)")
-                    }
-                    if let proxyDomain = info["SloopyLSBundleProxyErrorDomain"] as? String,
-                       let proxyCode = info["SloopyLSBundleProxyErrorCode"] {
-                        details.append("LSBundleProxy attempt: \(proxyDomain) (code \(proxyCode))")
-                        if let description = info["SloopyLSBundleProxyErrorDescription"] as? String {
-                            details.append("LSBundleProxy detail: \(description)")
-                        }
-                    }
-                    if let underlyingError {
-                        details.append(
-                            "Underlying: \(underlyingError.domain) (code \(underlyingError.code))"
-                        )
-                        if let debug = underlyingError.userInfo[NSDebugDescriptionErrorKey] as? String {
-                            details.append("Underlying debug: \(debug)")
-                        }
-                    }
-
-                    appIconError = details.joined(separator: "\n")
+                    appIconError = message
                 } else {
-                    selectedAppIconName = targetName
+                    selectedAppIconID = option.id
                 }
             }
         }
