@@ -68,7 +68,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Run alternate app icon UI test on iOS Simulator
+      - name: Build alternate app icon UI test app on iOS Simulator
         run: |
           SIMULATOR_ID="$(python3 - <<'PY'
           import json
@@ -88,7 +88,23 @@ jobs:
           raise SystemExit("No available iPhone simulator was found.")
           PY
           )"
-          xcodebuild test \
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+          xcodebuild build-for-testing \
+            -project Native/Sloopy.xcodeproj \
+            -scheme Sloopy \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/SloopyIconUITests" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Stage Eevee-style alternate icons in Simulator app
+        run: |
+          APP_PATH="$RUNNER_TEMP/SloopyIconUITests/Build/Products/Debug-iphonesimulator/Sloopy.app"
+          test -d "$APP_PATH"
+          bash Native/Scripts/StageAlternateAppIcons.sh "$APP_PATH"
+
+      - name: Run alternate app icon UI test on iOS Simulator
+        run: |
+          xcodebuild test-without-building \
             -project Native/Sloopy.xcodeproj \
             -scheme Sloopy \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
