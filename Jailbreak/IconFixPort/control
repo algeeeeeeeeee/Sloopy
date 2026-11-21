@@ -1,0 +1,9 @@
+Package: com.sloopy.iconfixlsd
+Name: Sloopy IconFix (LaunchServices)
+Version: 0.1.1
+Architecture: iphoneos-arm64
+Description: Rootless LaunchServices alternate-icon write-path fix inspired by IconFix.
+Maintainer: Sloopy
+Author: Sloopy
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000)
