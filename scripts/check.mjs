@@ -29,6 +29,7 @@ const pkg = readJson('package.json');
 const lock = readJson('package-lock.json');
 const cap = readJson('capacitor.config.json');
 const manifest = readJson('www/manifest.webmanifest');
+const blankHomeScreenLabel = '\u200B';
 
 check(
   Number(process.versions.node.split('.')[0]) >= 22,
@@ -62,10 +63,26 @@ if (cap) {
     Boolean(cap.appId && cap.appName),
     'Capacitor app identity exists'
   );
+  check(
+    cap.appName === blankHomeScreenLabel,
+    'Capacitor Home Screen label is visually blank'
+  );
 
   check(
     fs.existsSync(path.join(root, cap.webDir || 'www', 'index.html')),
     'Capacitor webDir contains index.html'
+  );
+}
+
+const nativeProjectPath = path.join(root, 'Native/project.yml');
+if (fs.existsSync(nativeProjectPath)) {
+  const nativeProject = fs.readFileSync(nativeProjectPath, 'utf8');
+  const displayName = nativeProject.match(
+    /^\s*INFOPLIST_KEY_CFBundleDisplayName:\s*"([^"]*)"\s*$/m
+  )?.[1];
+  check(
+    displayName === blankHomeScreenLabel,
+    'Native iOS Home Screen label is visually blank'
   );
 }
 
@@ -78,6 +95,16 @@ if (fs.existsSync(htmlPath)) {
   const inline = tags.filter(([, attrs]) => !/\bsrc\s*=/i.test(attrs));
 
   check(inline.length > 0, 'Inline application script exists');
+
+  const appleTitleTag = html.match(
+    /<meta\b(?=[^>]*\bname=["']apple-mobile-web-app-title["'])[^>]*>/i
+  )?.[0] ?? '';
+  const appleTitle = appleTitleTag.match(/\bcontent=["']([^"']*)["']/i)?.[1]
+    ?.replace(/&#8203;|&#x200b;/gi, blankHomeScreenLabel);
+  check(
+    appleTitle === blankHomeScreenLabel,
+    'iOS Home Screen label is visually blank'
+  );
 
   inline.forEach(([, , code], index) => {
     try {
@@ -135,6 +162,14 @@ if (fs.existsSync(swPath)) {
 }
 
 if (manifest) {
+  check(
+    manifest.name === blankHomeScreenLabel,
+    'Manifest name is visually blank'
+  );
+  check(
+    manifest.short_name === blankHomeScreenLabel,
+    'Manifest short_name is visually blank'
+  );
   check(Array.isArray(manifest.icons), 'Manifest icons list exists');
 
   for (const icon of manifest.icons ?? []) {
