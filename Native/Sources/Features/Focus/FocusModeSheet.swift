@@ -56,6 +56,7 @@ struct FocusModeSheet: View {
     @State private var isPickerPresented = false
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @State private var diagnosticsMessage: String?
 
     private let focusService = SloopyFocusService.shared
 
@@ -85,10 +86,30 @@ struct FocusModeSheet: View {
 
                     selectionCard
 
+                    Button {
+                        diagnosticsMessage = SloopyDiagnostics.runtimeEntitlementsReport()
+                    } label: {
+                        Label("Diagnostics", systemImage: "stethoscope")
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    if let diagnosticsMessage {
+                        Text(diagnosticsMessage)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.background, in: RoundedRectangle(cornerRadius: 13))
+                    }
+
                     if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
+                        Text(errorMessage)
+                            .font(.caption.monospaced())
                             .foregroundStyle(.orange)
+                            .textSelection(.enabled)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
@@ -339,9 +360,11 @@ struct FocusModeSheet: View {
                 try await focusService.requestAuthorization()
                 isPickerPresented = true
             } catch {
-                errorMessage = "Family Controls permission is needed. This app’s Family Controls capability must be approved by Apple; a child account may also need a parent or guardian to approve the system request."
-                let nsError = error as NSError
-                errorMessage = (errorMessage ?? "") + "\n\nDetail: \(nsError.domain) · code \(nsError.code) · \(error.localizedDescription)"
+                errorMessage = """
+                Family Controls permission is needed. This app’s Family Controls capability must be approved by Apple; a child account may also need a parent or guardian to approve the system request.
+
+                \(SloopyDiagnostics.authorizationFailureReport(for: error))
+                """
             }
         }
     }
@@ -369,9 +392,11 @@ struct FocusModeSheet: View {
 
             dismiss()
         } catch {
-            errorMessage = "Sloopy couldn’t activate app limits. Check that Family Controls is enabled for this app and approved for your Apple developer team."
-            let nsError = error as NSError
-            errorMessage = (errorMessage ?? "") + "\n\nDetail: \(nsError.domain) · code \(nsError.code) · \(error.localizedDescription)"
+            errorMessage = """
+            Sloopy couldn’t activate app limits. Check that Family Controls is enabled for this app and approved for your Apple developer team.
+
+            \(SloopyDiagnostics.authorizationFailureReport(for: error))
+            """
         }
     }
 
