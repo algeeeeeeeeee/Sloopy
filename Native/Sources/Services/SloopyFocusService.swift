@@ -72,6 +72,25 @@ final class SloopyFocusService {
             ? nil : .specific(selection.categoryTokens)
     }
 
+    func applySelectionUnchecked(_ selection: FamilyActivitySelection) throws {
+        let hasSelection = !selection.applicationTokens.isEmpty
+            || !selection.webDomainTokens.isEmpty
+            || !selection.categoryTokens.isEmpty
+
+        guard hasSelection else {
+            throw SloopyFocusError.noSelection
+        }
+
+        store.shield.applications = selection.applicationTokens.isEmpty
+            ? nil : selection.applicationTokens
+        store.shield.webDomains = selection.webDomainTokens.isEmpty
+            ? nil : selection.webDomainTokens
+        store.shield.applicationCategories = selection.categoryTokens.isEmpty
+            ? nil : .specific(selection.categoryTokens)
+        store.shield.webDomainCategories = selection.categoryTokens.isEmpty
+            ? nil : .specific(selection.categoryTokens)
+    }
+
     func clearShields() {
         store.shield.applications = nil
         store.shield.webDomains = nil
