@@ -77,10 +77,12 @@ jobs:
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -f "$APP_PATH/Sloopy"
           brew install ldid
-          ldid -SNative/Sloopy.entitlements "$APP_PATH/Sloopy"
+          ldid -SNative/Sloopy-trollstore.entitlements "$APP_PATH/Sloopy"
           echo "Entitlements now embedded in the binary:"
           ldid -e "$APP_PATH/Sloopy" | tee "$RUNNER_TEMP/embedded-entitlements.xml"
           grep -q "com.apple.developer.family-controls" "$RUNNER_TEMP/embedded-entitlements.xml"
+          grep -q "application-identifier" "$RUNNER_TEMP/embedded-entitlements.xml"
+          grep -q "com.apple.developer.team-identifier" "$RUNNER_TEMP/embedded-entitlements.xml"
 
       - name: Verify fixed app icon and blank Home Screen label
         run: |
