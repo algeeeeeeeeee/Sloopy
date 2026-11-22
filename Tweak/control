@@ -1,0 +1,9 @@
+Package: com.sloopy.blockertest
+Name: SloopyBlockerTest
+Version: 0.0.1
+Architecture: iphoneos-arm64
+Description: Minimal SpringBoard launch-blocking test for Calculator
+Maintainer: Sloopy Project
+Author: Sloopy Project
+Section: Tweaks
+Depends: firmware (>= 15.0)

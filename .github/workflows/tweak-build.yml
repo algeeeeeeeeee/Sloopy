@@ -1,0 +1,100 @@
+name: SloopyBlockerTest rootless build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Tweak/**"
+      - ".github/workflows/tweak-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-rootless:
+    name: Build rootless Debian package
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    env:
+      THEOS: ${{ github.workspace }}/theos
+      THEOS_SDKS_ROOT: ${{ github.workspace }}/theos/sdks
+      THEOS_PACKAGE_SCHEME: rootless
+
+    steps:
+      - name: Checkout Sloopy
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify full Xcode installation
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Checkout pinned Theos
+        uses: actions/checkout@v4
+        with:
+          repository: theos/theos
+          ref: 8167f59de02fd32cf45b16bfcb1330dfa5c9974c
+          path: theos
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Checkout pinned iOS SDK collection
+        uses: actions/checkout@v4
+        with:
+          repository: theos/sdks
+          ref: 0222fd5413cf4b9af096f37b4621afa2688572f7
+          path: theos/sdks
+          fetch-depth: 1
+
+      - name: Install build and inspection dependencies
+        run: |
+          brew update
+          brew install make xz ldid dpkg
+          gmake --version
+          ldid --version || true
+          dpkg-deb --version
+
+      - name: Verify pinned SDK and print toolchain versions
+        run: |
+          test -d "$THEOS_SDKS_ROOT/iPhoneOS15.6.sdk"
+          git -C theos rev-parse HEAD
+          git -C theos/sdks rev-parse HEAD
+          echo "Using pinned Theos commit 8167f59de02fd32cf45b16bfcb1330dfa5c9974c"
+          echo "Using pinned SDK collection commit 0222fd5413cf4b9af096f37b4621afa2688572f7"
+          echo "Selected SDK directory: $THEOS_SDKS_ROOT/iPhoneOS15.6.sdk"
+
+      - name: Build package
+        working-directory: Tweak
+        run: |
+          gmake clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+      - name: Inspect Debian package
+        shell: bash
+        run: |
+          shopt -s nullglob
+          packages=(Tweak/packages/*.deb)
+          if [[ ${#packages[@]} -ne 1 ]]; then
+            echo "Expected exactly one .deb package; found ${#packages[@]}"
+            find Tweak -maxdepth 4 -type f -print
+            exit 1
+          fi
+
+          echo "===== dpkg-deb -c: ${packages[0]} ====="
+          dpkg-deb -c "${packages[0]}"
+
+          echo "===== dpkg-deb -I: ${packages[0]} ====="
+          dpkg-deb -I "${packages[0]}"
+
+      - name: Upload rootless .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SloopyBlockerTest-0.0.1-rootless
+          path: Tweak/packages/*.deb
+          if-no-files-found: error
+          retention-days: 7
