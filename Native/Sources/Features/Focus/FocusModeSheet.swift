@@ -58,6 +58,8 @@ struct FocusModeSheet: View {
     @State private var errorMessage: String?
     @State private var diagnosticsMessage: String?
     @State private var shieldTestMessage: String?
+    @State private var authorizationLogsMessage: String?
+    @State private var isCapturingAuthorizationLogs = false
 
     private let focusService = SloopyFocusService.shared
 
@@ -130,6 +132,17 @@ struct FocusModeSheet: View {
                         }
                         .buttonStyle(.bordered)
 
+                        Button {
+                            Task { await captureAuthorizationLogs() }
+                        } label: {
+                            Label("Capture logs around authorization", systemImage: "doc.text.magnifyingglass")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isCapturingAuthorizationLogs)
+
+
                         if let shieldTestMessage {
                             Text(shieldTestMessage)
                                 .font(.caption.monospaced())
@@ -142,6 +155,16 @@ struct FocusModeSheet: View {
 
                         if let diagnosticsMessage {
                             Text(diagnosticsMessage)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(.background, in: RoundedRectangle(cornerRadius: 13))
+                        }
+
+                        if let authorizationLogsMessage {
+                            Text(authorizationLogsMessage)
                                 .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
@@ -408,6 +431,39 @@ struct FocusModeSheet: View {
         } catch {
             shieldTestMessage = String(reflecting: error)
         }
+    }
+
+    @MainActor
+    private func captureAuthorizationLogs() async {
+        isCapturingAuthorizationLogs = true
+        defer { isCapturingAuthorizationLogs = false }
+
+        let requestStartedAt = Date()
+        let authorizationResult: String
+
+        do {
+            try await focusService.requestAuthorization()
+            authorizationResult = "requestAuthorization: success"
+        } catch {
+            authorizationResult = """
+            requestAuthorization error:
+            \(SloopyDiagnostics.authorizationFailureReport(for: error))
+            """
+        }
+
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+
+        let capturedLogs = await SloopyDiagnostics.captureCurrentProcessLogs(
+            around: requestStartedAt
+        )
+        authorizationLogsMessage = """
+        \(authorizationResult)
+
+        Entries in requested time window: \(capturedLogs.entryCount)
+        (Up to 200 lines and 12,000 characters are displayed.)
+
+        \(capturedLogs.text)
+        """
     }
 
     private func requestAccessAndChoose() {
