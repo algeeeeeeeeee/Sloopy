@@ -6,16 +6,18 @@ private struct IconAsset {
     let previewName: String
 }
 
+// The first entry is the one fixed icon registered as "AppIcon" in the
+// iOS target. Use the user's original Crystal PNG without redrawing it.
 private let iconAssets = [
     IconAsset(
-        sourceFileName: "9ebf643bc259023155542695f3587be3.PNG",
+        sourceFileName: "IMG_1659.PNG",
         setName: "AppIcon",
-        previewName: "SloopyIconPreview-CCTV"
+        previewName: "SloopyIconPreview-Crystal"
     ),
     IconAsset(
-        sourceFileName: "IMG_1659.PNG",
-        setName: "AppIcon-Crystal",
-        previewName: "SloopyIconPreview-Crystal"
+        sourceFileName: "9ebf643bc259023155542695f3587be3.PNG",
+        setName: "AppIcon-CCTV",
+        previewName: "SloopyIconPreview-CCTV"
     ),
     IconAsset(
         sourceFileName: "IMG_1745.PNG",
