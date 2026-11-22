@@ -126,6 +126,7 @@ struct SettingsScreen: View {
             QuickLaunchEditorSheet { app in
                 saveCustomQuickApps(customQuickApps + [app])
             }
+            .sloopyAccent()
         }
     }
 
