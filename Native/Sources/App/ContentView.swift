@@ -26,8 +26,7 @@ enum SloopyTab: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @State private var selectedTab: SloopyTab = .home
-    @AppStorage("sloopy-native-navigation-collapsed")
-    private var isNavigationCollapsed = false
+    @State private var isNavigationExpanded = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -47,62 +46,81 @@ struct ContentView: View {
     }
 
     private var navigationDock: some View {
-        HStack(spacing: isNavigationCollapsed ? 9 : 4) {
-            ForEach(SloopyTab.allCases) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    Group {
-                        if isNavigationCollapsed {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: 18, weight: .semibold))
-                        } else {
-                            VStack(spacing: 5) {
-                                Image(systemName: tab.symbol)
-                                    .font(.system(size: 17, weight: .semibold))
-                                Text(tab.title)
-                                    .font(.system(size: 10, weight: .semibold))
-                            }
-                        }
-                    }
-                    .foregroundStyle(selectedTab == tab ? Color.accentColor : Color.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: isNavigationCollapsed ? 38 : 48)
-                    .background {
-                        if selectedTab == tab {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.accentColor.opacity(0.13))
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(tab.title)
-            }
-
+        VStack(spacing: 6) {
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
-                    isNavigationCollapsed.toggle()
+                    isNavigationExpanded.toggle()
                 }
             } label: {
-                Image(systemName: isNavigationCollapsed ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 29, height: isNavigationCollapsed ? 38 : 48)
-                    .contentShape(Rectangle())
+                HStack(spacing: 9) {
+                    Image(systemName: selectedTab.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                    Text(selectedTab.title)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 4)
+                    Image(systemName: isNavigationExpanded ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 42)
+                .frame(maxWidth: .infinity)
+                .background(Color.primary.opacity(0.045), in: Capsule())
+                .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isNavigationCollapsed ? "Expand navigation" : "Collapse navigation")
+            .accessibilityLabel(isNavigationExpanded ? "Close navigation" : "Open navigation")
+            .accessibilityIdentifier("sloopy.nav.toggle")
+
+            if isNavigationExpanded {
+                HStack(spacing: 4) {
+                    ForEach(SloopyTab.allCases) { tab in
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                                selectedTab = tab
+                                isNavigationExpanded = false
+                            }
+                        } label: {
+                            VStack(spacing: 5) {
+                                Image(systemName: tab.symbol)
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text(tab.title)
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
+                            .foregroundStyle(selectedTab == tab ? Color.accentColor : Color.secondary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background {
+                                if selectedTab == tab {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.accentColor.opacity(0.13))
+                                }
+                            }
+                            .contentShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(tab.title)
+                        .accessibilityIdentifier("sloopy.nav.\\(tab.rawValue)")
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
-        .padding(7)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1))
-        .shadow(color: Color.primary.opacity(0.08), radius: 18, y: 7)
-        .padding(.horizontal, 22)
+        .padding(6)
+        .frame(maxWidth: isNavigationExpanded ? 365 : 154)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: isNavigationExpanded ? 24 : 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: isNavigationExpanded ? 24 : 28, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: Color.primary.opacity(0.12), radius: 18, y: 7)
+        .padding(.horizontal, 14)
         .padding(.bottom, 10)
-        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: isNavigationCollapsed)
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: isNavigationExpanded)
     }
 }
 
