@@ -57,6 +57,7 @@ struct FocusModeSheet: View {
     @State private var isWorking = false
     @State private var errorMessage: String?
     @State private var diagnosticsMessage: String?
+    @State private var shieldTestMessage: String?
 
     private let focusService = SloopyFocusService.shared
 
@@ -86,24 +87,71 @@ struct FocusModeSheet: View {
 
                     selectionCard
 
-                    Button {
-                        diagnosticsMessage = SloopyDiagnostics.runtimeEntitlementsReport()
-                    } label: {
-                        Label("Diagnostics", systemImage: "stethoscope")
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-
-                    if let diagnosticsMessage {
-                        Text(diagnosticsMessage)
-                            .font(.caption.monospaced())
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("DIAGNOSTICS")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(1)
                             .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.background, in: RoundedRectangle(cornerRadius: 13))
+
+                        Button {
+                            isPickerPresented = true
+                        } label: {
+                            Label("Try picker anyway", systemImage: "square.grid.2x2")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            runUncheckedShieldTest()
+                        } label: {
+                            Label("Try shield test", systemImage: "hand.raised.slash")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            focusService.clearShields()
+                            shieldTestMessage = "clearShields(): called"
+                        } label: {
+                            Label("Clear shields", systemImage: "shield.slash")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            diagnosticsMessage = SloopyDiagnostics.runtimeEntitlementsReport()
+                        } label: {
+                            Label("Diagnostics", systemImage: "stethoscope")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        if let shieldTestMessage {
+                            Text(shieldTestMessage)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(.background, in: RoundedRectangle(cornerRadius: 13))
+                        }
+
+                        if let diagnosticsMessage {
+                            Text(diagnosticsMessage)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(.background, in: RoundedRectangle(cornerRadius: 13))
+                        }
                     }
+                    .padding(15)
+                    .background(.background, in: RoundedRectangle(cornerRadius: 20))
 
                     if let errorMessage {
                         Text(errorMessage)
@@ -347,6 +395,18 @@ struct FocusModeSheet: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    @MainActor
+    private func runUncheckedShieldTest() {
+        let savedSelection = focusService.loadSelection()
+
+        do {
+            try focusService.applySelectionUnchecked(savedSelection)
+            shieldTestMessage = "applySelectionUnchecked: success"
+        } catch {
+            shieldTestMessage = String(reflecting: error)
         }
     }
 
