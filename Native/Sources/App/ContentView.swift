@@ -104,7 +104,7 @@ struct ContentView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(tab.title)
-                        .accessibilityIdentifier("sloopy.nav.\\(tab.rawValue)")
+                        .accessibilityIdentifier("sloopy.nav.\(tab.rawValue)")
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
