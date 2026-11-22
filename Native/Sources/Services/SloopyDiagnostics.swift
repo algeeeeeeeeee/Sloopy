@@ -6,6 +6,43 @@ import OSLog
 
 @MainActor
 enum SloopyDiagnostics {
+    private final class TimeoutGate<Value: Sendable>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<Value?, Never>?
+
+        init(_ continuation: CheckedContinuation<Value?, Never>) {
+            self.continuation = continuation
+        }
+
+        func resolve(_ value: Value?) {
+            lock.lock()
+            let pendingContinuation = continuation
+            continuation = nil
+            lock.unlock()
+
+            pendingContinuation?.resume(returning: value)
+        }
+    }
+
+    /// Returns at the deadline even if the operation does not cooperate with cancellation.
+    static func withTimeout<Value: Sendable>(
+        seconds: UInt64,
+        operation: @escaping @MainActor () async -> Value
+    ) async -> Value? {
+        await withCheckedContinuation { continuation in
+            let gate = TimeoutGate<Value>(continuation)
+
+            Task { @MainActor in
+                gate.resolve(await operation())
+            }
+
+            Task {
+                try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+                gate.resolve(nil)
+            }
+        }
+    }
+
     static func authorizationFailureReport(for error: Error) -> String {
         let nsError = error as NSError
         let underlyingError = nsError.userInfo[NSUnderlyingErrorKey].map {
