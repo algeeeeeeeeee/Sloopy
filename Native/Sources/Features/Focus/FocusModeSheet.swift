@@ -439,31 +439,57 @@ struct FocusModeSheet: View {
         defer { isCapturingAuthorizationLogs = false }
 
         let requestStartedAt = Date()
-        let authorizationResult: String
+        let timestamp = ISO8601DateFormatter().string(from: requestStartedAt)
+        authorizationLogsMessage = "Started \(timestamp)"
 
-        do {
-            try await focusService.requestAuthorization()
-            authorizationResult = "requestAuthorization: success"
-        } catch {
-            authorizationResult = """
-            requestAuthorization error:
-            \(SloopyDiagnostics.authorizationFailureReport(for: error))
-            """
-        }
+        let authorizationResult = await SloopyDiagnostics.withTimeout(seconds: 10) {
+            do {
+                try await focusService.requestAuthorization()
+                return "requestAuthorization: success"
+            } catch {
+                return """
+                requestAuthorization error:
+                \(SloopyDiagnostics.authorizationFailureReport(for: error))
+                """
+            }
+        } ?? "requestAuthorization: TIMEOUT 10s"
+
+        authorizationLogsMessage = """
+        Started \(timestamp)
+        \(authorizationResult)
+        Waiting for the log window...
+        """
 
         try? await Task.sleep(nanoseconds: 1_000_000_000)
 
-        let capturedLogs = await SloopyDiagnostics.captureCurrentProcessLogs(
-            around: requestStartedAt
-        )
         authorizationLogsMessage = """
+        Started \(timestamp)
         \(authorizationResult)
-
-        Entries in requested time window: \(capturedLogs.entryCount)
-        (Up to 200 lines and 12,000 characters are displayed.)
-
-        \(capturedLogs.text)
+        Capturing process logs...
         """
+
+        let capturedLogs = await SloopyDiagnostics.withTimeout(seconds: 10) {
+            await SloopyDiagnostics.captureCurrentProcessLogs(around: requestStartedAt)
+        }
+
+        if let capturedLogs {
+            authorizationLogsMessage = """
+            Started \(timestamp)
+            \(authorizationResult)
+
+            Entries in requested time window: \(capturedLogs.entryCount)
+            (Up to 200 lines and 12,000 characters are displayed.)
+
+            \(capturedLogs.text)
+            """
+        } else {
+            authorizationLogsMessage = """
+            Started \(timestamp)
+            \(authorizationResult)
+
+            log capture: TIMEOUT 10s
+            """
+        }
     }
 
     private func requestAccessAndChoose() {
