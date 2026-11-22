@@ -2,6 +2,7 @@ import CoreFoundation
 import Darwin
 import FamilyControls
 import Foundation
+import OSLog
 
 @MainActor
 enum SloopyDiagnostics {
@@ -24,6 +25,59 @@ enum SloopyDiagnostics {
         AuthorizationCenter.shared.authorizationStatus:
         \(String(reflecting: AuthorizationCenter.shared.authorizationStatus))
         """
+    }
+
+    static func captureCurrentProcessLogs(
+        around requestStartedAt: Date
+    ) async -> (text: String, entryCount: Int) {
+        let windowStart = requestStartedAt.addingTimeInterval(-2)
+        let windowEnd = requestStartedAt.addingTimeInterval(2)
+
+        // Wait until the requested two-second post-request window has elapsed.
+        let remainingInterval = windowEnd.timeIntervalSinceNow
+        if remainingInterval > 0 {
+            let nanoseconds = UInt64(remainingInterval * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanoseconds)
+        }
+
+        return await Task.detached(priority: .utility) {
+            do {
+                let store = try OSLogStore(scope: .currentProcessIdentifier)
+                let position = store.position(date: windowStart)
+                let entries = try store.getEntries(
+                    with: [],
+                    at: position,
+                    matching: nil
+                )
+                let formatter = ISO8601DateFormatter()
+                var lines: [String] = []
+
+                for entry in entries {
+                    guard entry.date >= windowStart else { continue }
+                    guard entry.date <= windowEnd else { break }
+
+                    let payload = entry as? OSLogEntryWithPayload
+                    let subsystem = payload?.subsystem ?? "-"
+                    let category = payload?.category ?? "-"
+                    let timestamp = formatter.string(from: entry.date)
+
+                    lines.append(
+                        "\(timestamp) | \(subsystem) | \(category) | \(entry.composedMessage)"
+                    )
+                }
+
+                let entryCount = lines.count
+                let limitedOutput = lines.prefix(200).joined(separator: "\n")
+                let output = String(limitedOutput.prefix(12_000))
+
+                return (
+                    output.isEmpty ? "Tidak ada entri log dalam rentang waktu." : output,
+                    entryCount
+                )
+            } catch {
+                return (String(reflecting: error), 0)
+            }
+        }.value
     }
 
     static func runtimeEntitlementsReport() -> String {
