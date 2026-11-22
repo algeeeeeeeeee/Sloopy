@@ -77,7 +77,22 @@ jobs:
           for ICON in AppIcon-Crystal AppIcon-Eye AppIcon-Cat AppIcon-Cube; do
             grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
           done
-          echo "Verified Assets.car and all four alternate app icons."
+          python3 - "$APP_PATH/Info.plist" <<'PY'
+          import plistlib
+          import sys
+
+          with open(sys.argv[1], "rb") as plist_file:
+              info = plistlib.load(plist_file)
+
+          actual = info.get("CFBundleDisplayName")
+          expected = "\u200B"
+          if actual != expected:
+              raise SystemExit(
+                  f"Expected an invisible Home Screen app label, got {actual!r}"
+              )
+          print("Verified compiled iOS app has a visually blank Home Screen label.")
+          PY
+          echo "Verified Assets.car, alternate icons, and blank app display name."
 
       - name: Package unsigned IPA
         run: |
