@@ -68,15 +68,12 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Verify app resources and alternate icons
+      - name: Verify fixed app icon and blank Home Screen label
         run: |
+          set -euo pipefail
           APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
           test -d "$APP_PATH"
           test -f "$APP_PATH/Assets.car"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons" "$APP_PATH/Info.plist" > "$RUNNER_TEMP/alternate-icons.txt"
-          for ICON in AppIcon-Crystal AppIcon-Eye AppIcon-Cat AppIcon-Cube; do
-            grep -q "$ICON" "$RUNNER_TEMP/alternate-icons.txt"
-          done
           python3 - "$APP_PATH/Info.plist" <<'PY'
           import plistlib
           import sys
@@ -90,9 +87,19 @@ jobs:
               raise SystemExit(
                   f"Expected an invisible Home Screen app label, got {actual!r}"
               )
-          print("Verified compiled iOS app has a visually blank Home Screen label.")
+
+          icons = info.get("CFBundleIcons", {}).get("CFBundlePrimaryIcon", {})
+          if not icons:
+              raise SystemExit("The fixed primary app icon is missing.")
+
+          alternates = info.get("CFBundleIcons", {}).get("CFBundleAlternateIcons", {})
+          if alternates:
+              raise SystemExit(
+                  f"Alternate app icons must be disabled, found: {sorted(alternates)}"
+              )
+
+          print("Verified fixed primary icon, no alternate icons, and visually blank Home Screen label.")
           PY
-          echo "Verified Assets.car, alternate icons, and blank app display name."
 
       - name: Package unsigned IPA
         run: |
