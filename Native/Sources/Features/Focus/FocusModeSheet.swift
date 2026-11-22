@@ -340,6 +340,8 @@ struct FocusModeSheet: View {
                 isPickerPresented = true
             } catch {
                 errorMessage = "Family Controls permission is needed. This app’s Family Controls capability must be approved by Apple; a child account may also need a parent or guardian to approve the system request."
+                let nsError = error as NSError
+                errorMessage = (errorMessage ?? "") + "\n\nDetail: \(nsError.domain) · code \(nsError.code) · \(error.localizedDescription)"
             }
         }
     }
@@ -368,6 +370,8 @@ struct FocusModeSheet: View {
             dismiss()
         } catch {
             errorMessage = "Sloopy couldn’t activate app limits. Check that Family Controls is enabled for this app and approved for your Apple developer team."
+            let nsError = error as NSError
+            errorMessage = (errorMessage ?? "") + "\n\nDetail: \(nsError.domain) · code \(nsError.code) · \(error.localizedDescription)"
         }
     }
 
