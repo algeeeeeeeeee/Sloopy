@@ -78,11 +78,13 @@ struct SloopyHomeScreen: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .sheet(isPresented: $isProfileEditorPresented) {
             ProfileEditorSheet()
+                .sloopyAccent()
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
         .sheet(item: $focusModeSheet) { mode in
             FocusModeSheet(mode: mode)
+                .sloopyAccent()
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }

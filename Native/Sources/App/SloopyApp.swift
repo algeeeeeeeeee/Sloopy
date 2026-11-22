@@ -19,7 +19,7 @@ struct SloopyApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(preferredScheme)
-                .tint(SloopyPalette.color(for: accent, customHex: accentHex))
+                .sloopyAccent()
                 .modelContainer(for: SloopyNote.self)
         }
     }

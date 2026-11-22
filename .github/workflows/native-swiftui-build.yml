@@ -68,6 +68,20 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
+      # An unsigned build does not embed Sloopy.entitlements into the binary.
+      # TrollStore keeps the entitlements that already exist in the binary, so
+      # embed them here with ldid (pseudo-signature, not an Apple signature).
+      - name: Embed entitlements for TrollStore
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/SloopyDevice/Build/Products/Release-iphoneos/Sloopy.app"
+          test -f "$APP_PATH/Sloopy"
+          brew install ldid
+          ldid -SNative/Sloopy.entitlements "$APP_PATH/Sloopy"
+          echo "Entitlements now embedded in the binary:"
+          ldid -e "$APP_PATH/Sloopy" | tee "$RUNNER_TEMP/embedded-entitlements.xml"
+          grep -q "com.apple.developer.family-controls" "$RUNNER_TEMP/embedded-entitlements.xml"
+
       - name: Verify fixed app icon and blank Home Screen label
         run: |
           set -euo pipefail
